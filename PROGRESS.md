@@ -64,6 +64,16 @@
 - [x] 6.7 Update `README.md` (overview, usage, programmatic example) and drop the item from future improvements
 - [x] 6.8 Run quality checks (pytest, ruff, mypy)
 
+## Phase 7 — Visual placement
+
+- [x] 7.1 Domain: `WatermarkRequest` gains `rotation` (−180..180), `tiled`, `tile_gap` and free placement via `position="custom"` with `x`/`y` fractions in 0..1
+- [x] 7.2 Domain: `stamp_image` renders a tight text tile (optionally rotated), places it by preset/custom coordinates and repeats it in a pannable grid when tiled
+- [x] 7.3 Presentation: pure helpers `centered_origin` and `point_to_fraction` map pointer coordinates to image fractions
+- [x] 7.4 Presentation: rotation spinbox, tile checkbox, `custom` in the position combobox and live drag on the preview (re-renders on every move, silent on invalid input)
+- [x] 7.5 Tests: domain (rotation, custom position, tiling, panning), preview (mapping/clamping), view (control defaults, drag behaviour, values reaching the service)
+- [x] 7.6 Update `README.md` (overview, usage, programmatic placement) and drop the item from future improvements
+- [x] 7.7 Run quality checks (pytest, ruff, mypy, pre-commit)
+
 ---
 
 ## Status
@@ -74,5 +84,6 @@
 | 2     | done   | 8f58be2 |
 | 3     | done   | 022b31a |
 | 4     | done   | 04bc1e9 |
-| 5     | done   | (this commit) |
-| 6     | done   | (this commit) |
+| 5     | done   | f02d3c4 |
+| 6     | done   | 50b0a17 |
+| 7     | done   | (this commit) |

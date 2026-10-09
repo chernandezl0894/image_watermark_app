@@ -85,6 +85,45 @@ def test_request_accepts_minimal_font_size() -> None:
     assert WatermarkRequest(text="Crissis", font_size=1).font_size == 1
 
 
+def test_request_placement_defaults() -> None:
+    request = WatermarkRequest(text=DEFAULT_TEXT)
+    assert request.rotation == 0.0
+    assert request.tiled is False
+    assert request.tile_gap == 0.2
+    assert request.x is None
+    assert request.y is None
+
+
+@pytest.mark.parametrize("rotation", [-180.1, 180.1])
+def test_request_rejects_out_of_range_rotation(rotation: float) -> None:
+    with pytest.raises(ValueError, match="Rotation must be"):
+        WatermarkRequest(text="Crissis", rotation=rotation)
+
+
+def test_request_rejects_custom_position_without_coordinates() -> None:
+    with pytest.raises(ValueError, match="Custom position requires"):
+        WatermarkRequest(text="Crissis", position="custom")
+
+
+@pytest.mark.parametrize("coordinate", [-0.1, 1.1])
+def test_request_rejects_custom_position_out_of_range(coordinate: float) -> None:
+    with pytest.raises(ValueError, match="Custom position requires"):
+        WatermarkRequest(text="Crissis", position="custom", x=coordinate, y=0.5)
+
+
+def test_request_accepts_custom_position_with_coordinates() -> None:
+    request = WatermarkRequest(text="Crissis", position="custom", x=0.25, y=0.75)
+    assert request.position == "custom"
+    assert request.x == 0.25
+    assert request.y == 0.75
+
+
+@pytest.mark.parametrize("gap", [0.0, -0.1, 2.1])
+def test_request_rejects_invalid_tile_gap(gap: float) -> None:
+    with pytest.raises(ValueError, match="Tile gap must be"):
+        WatermarkRequest(text="Crissis", tiled=True, tile_gap=gap)
+
+
 def test_invalid_image_error_is_a_value_error() -> None:
     assert issubclass(InvalidImageError, ValueError)
 
@@ -172,3 +211,89 @@ def test_stamp_honours_opacity_extremes() -> None:
 
     strong = stamp_image(original, WatermarkRequest(text=DEFAULT_TEXT, opacity=1.0))
     assert ImageChops.difference(original, strong.convert("RGB")).getbbox() is not None
+
+
+def test_stamp_places_custom_position_in_quadrant() -> None:
+    original = make_image()
+    marked = stamp_image(
+        original,
+        WatermarkRequest(
+            text=DEFAULT_TEXT, position="custom", x=0.25, y=0.25, font_size=40
+        ),
+    )
+    diff = ImageChops.difference(original, marked.convert("RGB")).getbbox()
+    assert diff is not None
+    center_x = (diff[0] + diff[2]) // 2
+    center_y = (diff[1] + diff[3]) // 2
+    assert center_x < original.width // 2
+    assert center_y < original.height // 2
+
+
+def test_stamp_rotation_changes_rendering() -> None:
+    original = make_image()
+    flat = stamp_image(
+        original, WatermarkRequest(text=DEFAULT_TEXT, rotation=0.0, font_size=40)
+    )
+    tilted = stamp_image(
+        original, WatermarkRequest(text=DEFAULT_TEXT, rotation=45.0, font_size=40)
+    )
+    diff = ImageChops.difference(flat.convert("RGB"), tilted.convert("RGB"))
+    assert diff.getbbox() is not None
+
+
+def test_stamp_rotation_keeps_center_near_anchor() -> None:
+    original = make_image()
+    marked = stamp_image(
+        original,
+        WatermarkRequest(
+            text=DEFAULT_TEXT, position="custom", x=0.5, y=0.5, rotation=45.0
+        ),
+    )
+    diff = ImageChops.difference(original, marked.convert("RGB")).getbbox()
+    assert diff is not None
+    center_x = (diff[0] + diff[2]) // 2
+    center_y = (diff[1] + diff[3]) // 2
+    assert abs(center_x - original.width // 2) <= original.width // 4
+    assert abs(center_y - original.height // 2) <= original.height // 4
+
+
+def test_stamp_tiled_covers_all_quadrants() -> None:
+    original = make_image()
+    single = stamp_image(original, WatermarkRequest(text=DEFAULT_TEXT))
+    tiled = stamp_image(original, WatermarkRequest(text=DEFAULT_TEXT, tiled=True))
+    single_diff = ImageChops.difference(original, single.convert("RGB")).getbbox()
+    tiled_diff = ImageChops.difference(original, tiled.convert("RGB")).getbbox()
+    assert single_diff is not None
+    assert tiled_diff is not None
+    width, height = original.size
+    assert tiled_diff[0] < width // 4
+    assert tiled_diff[1] < height // 4
+    assert tiled_diff[2] > width * 3 // 4
+    assert tiled_diff[3] > height * 3 // 4
+
+
+def test_stamp_tiled_pan_changes_pattern() -> None:
+    original = make_image()
+    origin = stamp_image(
+        original,
+        WatermarkRequest(
+            text=DEFAULT_TEXT, tiled=True, position="custom", x=0.0, y=0.0
+        ),
+    )
+    shifted = stamp_image(
+        original,
+        WatermarkRequest(
+            text=DEFAULT_TEXT, tiled=True, position="custom", x=0.5, y=0.5
+        ),
+    )
+    diff = ImageChops.difference(origin.convert("RGB"), shifted.convert("RGB"))
+    assert diff.getbbox() is not None
+
+
+def test_stamp_tiled_with_rotation_renders() -> None:
+    original = make_image()
+    marked = stamp_image(
+        original, WatermarkRequest(text=DEFAULT_TEXT, tiled=True, rotation=30.0)
+    )
+    diff = ImageChops.difference(original, marked.convert("RGB")).getbbox()
+    assert diff is not None

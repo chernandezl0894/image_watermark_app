@@ -22,6 +22,8 @@ Load an image from your computer, stamp a text watermark on it, preview the resu
 - Watermark text is editable (default: `Crissis`)
 - Watermark controls: opacity slider, position picker (five positions), text colour,
   font size (auto by default) and custom TTF/OTF font selection
+- Visual placement: drag the watermark over the preview, tilt it (−180° to 180°)
+  or tile it (repeat it across the whole image, panned by dragging)
 - Live preview before exporting
 - Save the result as PNG, JPEG, BMP, GIF, WebP or TIFF
 - Friendly validation messages (no image loaded, empty text, missing font file, ...)
@@ -68,11 +70,15 @@ uv run image-watermark-app
 1. **Load Image...** — pick a picture from your computer; it appears in the preview.
 2. **Watermark** — type the text you want to stamp (defaults to `Crissis`).
 3. **Watermark options** — tune the controls: opacity slider, position picker,
-   text colour (**Choose...**), font size (blank = auto-scaled) and custom font
-   (**Browse...** for a TTF/OTF file, **Clear** to restore the default font).
-4. **Apply Watermark** (or press **Enter** in the text field) — the preview updates
+   text colour (**Choose...**), font size (blank = auto-scaled), custom font
+   (**Browse...** for a TTF/OTF file, **Clear** to restore the default font),
+   rotation and **Tile (repeat)**.
+4. **Place it visually** — drag anywhere over the preview to move the watermark
+   (the position switches to `custom` and the preview refreshes live); with
+   **Tile** active, dragging pans the repeated pattern instead.
+5. **Apply Watermark** (or press **Enter** in the text field) — the preview updates
    with the watermark rendered using the current controls.
-5. **Save As...** — choose the destination; the suggested name is
+6. **Save As...** — choose the destination; the suggested name is
    `original_watermarked.ext`.
 
 ### Programmatic usage
@@ -103,7 +109,19 @@ service.watermark_file(
 
 `color` accepts a hex string like `#RRGGBB`; `font_size=None` scales the text with
 the image; `font_path=None` uses the built-in font (an unreadable file falls back
-to it instead of failing).
+to it instead of failing). Placement is equally programmatic:
+
+```python
+WatermarkRequest(
+    text="Crissis",
+    position="custom",  # free placement
+    x=0.25,
+    y=0.75,  # fractions of width/height (centre of the text)
+    rotation=30.0,  # counter-clockwise degrees, -180..180
+    tiled=True,  # repeat across the image
+    tile_gap=0.2,  # gap between repeats (fraction of the shorter side)
+)
+```
 
 ## Architecture
 
@@ -205,8 +223,6 @@ is available.
 
 ## Future improvements
 
-- **Visual placement**: drag the watermark over the preview, tilt/rotation and tiled
-  (repeated) watermarks
 - **Logo watermark**: stamp an image/logo in addition to text
 - **Batch mode**: process a whole folder of images at once
 - **Drag & drop** images onto the window and a "recent files" list

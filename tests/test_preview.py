@@ -1,6 +1,31 @@
 from PIL import Image
 
-from image_watermark_app.presentation import fit_within, flatten_for_preview
+from image_watermark_app.presentation import (
+    centered_origin,
+    fit_within,
+    flatten_for_preview,
+    point_to_fraction,
+)
+
+
+def test_centered_origin_places_photo_in_the_middle() -> None:
+    assert centered_origin((700, 500), (300, 200)) == (200, 150)
+
+
+def test_centered_origin_handles_tighter_widget() -> None:
+    assert centered_origin((100, 80), (300, 200)) == (-100, -60)
+
+
+def test_point_to_fraction_maps_from_widget_centre() -> None:
+    assert point_to_fraction((150, 100), (0, 0), (300, 200)) == (0.5, 0.5)
+
+
+def test_point_to_fraction_accounts_for_photo_origin() -> None:
+    assert point_to_fraction((350, 250), (200, 150), (300, 200)) == (0.5, 0.5)
+
+
+def test_point_to_fraction_clamps_outside_the_photo() -> None:
+    assert point_to_fraction((-50, 999), (0, 0), (300, 200)) == (0.0, 1.0)
 
 
 def test_fit_within_scales_down() -> None:

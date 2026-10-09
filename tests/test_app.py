@@ -1,11 +1,13 @@
 import tkinter as tk
 from pathlib import Path
 from tkinter import colorchooser, filedialog, messagebox
+from types import SimpleNamespace
 
 import pytest
 from PIL import Image
 
 from image_watermark_app.domain import WatermarkRequest
+from image_watermark_app.presentation import centered_origin
 from image_watermark_app.presentation.app import WatermarkApp
 
 
@@ -237,6 +239,63 @@ def test_apply_with_missing_font_warns(
     assert warnings == [f"Font file not found: {tmp_path / 'gone.ttf'}"]
 
 
+def test_placement_control_defaults(gui: WatermarkApp) -> None:
+    assert gui.rotation_var.get() == "0"
+    assert gui.tiled_var.get() is False
+    assert gui.position_var.get() == "bottom-right"
+    assert gui.x_var.get() == pytest.approx(0.5)
+    assert gui.y_var.get() == pytest.approx(0.5)
+    assert "custom" in gui.position_combo.cget("values")
+
+
+def test_apply_with_invalid_rotation_warns(
+    gui: WatermarkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        messagebox, "showwarning", lambda title, message: warnings.append(message)
+    )
+    gui.load_from_path(make_test_image(tmp_path / "photo.png"))
+    gui.rotation_var.set("abc")
+    gui.apply_watermark()
+    assert warnings == ["Rotation must be a whole number, got 'abc'"]
+
+
+def test_drag_updates_position(
+    gui: WatermarkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gui.load_from_path(make_test_image(tmp_path / "photo.png"))
+    assert gui._preview_photo is not None
+    photo_size = (gui._preview_photo.width(), gui._preview_photo.height())
+    monkeypatch.setattr(gui.preview_label, "winfo_width", lambda: 700)
+    monkeypatch.setattr(gui.preview_label, "winfo_height", lambda: 500)
+    origin = centered_origin((700, 500), photo_size)
+    event = SimpleNamespace(
+        x=origin[0] + photo_size[0] // 4, y=origin[1] + photo_size[1] // 4
+    )
+    gui._on_drag_move(event)
+    assert gui.position_var.get() == "custom"
+    assert gui.x_var.get() == pytest.approx(0.25)
+    assert gui.y_var.get() == pytest.approx(0.25)
+    assert "Position" in gui.status_var.get()
+
+
+def test_drag_without_image_does_nothing(gui: WatermarkApp) -> None:
+    gui._on_drag_move(SimpleNamespace(x=10, y=10))
+    assert gui.position_var.get() == "bottom-right"
+    assert gui.source is None
+
+
+def test_drag_outside_the_photo_is_ignored(
+    gui: WatermarkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gui.load_from_path(make_test_image(tmp_path / "photo.png"))
+    monkeypatch.setattr(gui.preview_label, "winfo_width", lambda: 700)
+    monkeypatch.setattr(gui.preview_label, "winfo_height", lambda: 500)
+    gui._on_drag_move(SimpleNamespace(x=0, y=0))
+    assert gui.position_var.get() == "bottom-right"
+
+
 class RecordingService:
     """Fake WatermarkUseCases proving the view depends only on the protocol."""
 
@@ -299,6 +358,8 @@ def test_controls_reach_the_service(app_root: tk.Tk, tmp_path: Path) -> None:
     view.color_var.set("#00FF00")
     view.font_size_var.set("48")
     view.font_path_var.set(str(font))
+    view.rotation_var.set("30")
+    view.tiled_var.set(True)
     view.apply_watermark()
 
     [request] = service.applied
@@ -307,3 +368,28 @@ def test_controls_reach_the_service(app_root: tk.Tk, tmp_path: Path) -> None:
     assert request.color == "#00FF00"
     assert request.font_size == 48
     assert request.font_path == font
+    assert request.rotation == pytest.approx(30.0)
+    assert request.tiled is True
+
+
+def test_drag_reaches_the_service(
+    app_root: tk.Tk, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service = RecordingService()
+    view = WatermarkApp(app_root, service=service)
+    view.load_from_path(tmp_path / "ignored-by-fake.png")
+    assert view._preview_photo is not None
+    photo_size = (view._preview_photo.width(), view._preview_photo.height())
+    monkeypatch.setattr(view.preview_label, "winfo_width", lambda: 700)
+    monkeypatch.setattr(view.preview_label, "winfo_height", lambda: 500)
+    origin = centered_origin((700, 500), photo_size)
+    view._on_drag_move(
+        SimpleNamespace(x=origin[0] + photo_size[0], y=origin[1] + photo_size[1])
+    )
+    view.apply_watermark()
+
+    first, second = service.applied
+    assert first.position == "custom"
+    assert first.x == pytest.approx(1.0)
+    assert first.y == pytest.approx(1.0)
+    assert second.position == "custom"

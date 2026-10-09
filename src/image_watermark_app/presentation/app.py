@@ -3,6 +3,7 @@
 import tkinter as tk
 from pathlib import Path
 from tkinter import colorchooser, filedialog, messagebox, ttk
+from typing import Protocol
 
 from PIL import Image, ImageTk
 
@@ -10,15 +11,21 @@ from image_watermark_app.application.ports import WatermarkUseCases
 from image_watermark_app.application.services import WatermarkService
 from image_watermark_app.application.validation import validate_request
 from image_watermark_app.domain.models import (
+    CUSTOM_POSITION,
     DEFAULT_COLOR,
     DEFAULT_OPACITY,
     DEFAULT_POSITION,
     DEFAULT_TEXT,
-    POSITIONS,
+    POSITION_CHOICES,
     WatermarkRequest,
 )
 from image_watermark_app.infrastructure.pillow_repository import PillowImageRepository
-from image_watermark_app.presentation.preview import fit_within, flatten_for_preview
+from image_watermark_app.presentation.preview import (
+    centered_origin,
+    fit_within,
+    flatten_for_preview,
+    point_to_fraction,
+)
 
 PREVIEW_MAX = (640, 420)
 IMAGE_FILETYPES = [
@@ -29,6 +36,13 @@ FONT_FILETYPES = [
     ("Font files", "*.ttf *.otf *.ttc"),
     ("All files", "*.*"),
 ]
+
+
+class PointerEvent(Protocol):
+    """Anything that carries pointer coordinates (a Tk event or a test stub)."""
+
+    x: int
+    y: int
 
 
 class WatermarkApp:
@@ -68,6 +82,10 @@ class WatermarkApp:
         self.color_var = tk.StringVar(value=DEFAULT_COLOR)
         self.font_size_var = tk.StringVar(value="")
         self.font_path_var = tk.StringVar(value="")
+        self.rotation_var = tk.StringVar(value="0")
+        self.tiled_var = tk.BooleanVar(value=False)
+        self.x_var = tk.DoubleVar(value=0.5)
+        self.y_var = tk.DoubleVar(value=0.5)
 
         options = ttk.LabelFrame(root, text="Watermark options", padding=8)
         options.pack(fill=tk.X, side=tk.TOP, padx=8, pady=4)
@@ -88,13 +106,14 @@ class WatermarkApp:
         )
         self.opacity_label.pack(side=tk.LEFT)
         ttk.Label(position_row, text="Position:").pack(side=tk.LEFT, padx=(12, 4))
-        ttk.Combobox(
+        self.position_combo = ttk.Combobox(
             position_row,
             textvariable=self.position_var,
-            values=POSITIONS,
+            values=POSITION_CHOICES,
             state="readonly",
             width=14,
-        ).pack(side=tk.LEFT)
+        )
+        self.position_combo.pack(side=tk.LEFT)
 
         style_row = ttk.Frame(options)
         style_row.pack(fill=tk.X, pady=(6, 0))
@@ -129,6 +148,26 @@ class WatermarkApp:
             side=tk.LEFT, padx=(4, 0)
         )
 
+        placement_row = ttk.Frame(options)
+        placement_row.pack(fill=tk.X, pady=(6, 0))
+        ttk.Label(placement_row, text="Rotation:").pack(side=tk.LEFT)
+        ttk.Spinbox(
+            placement_row,
+            from_=-180,
+            to=180,
+            width=5,
+            textvariable=self.rotation_var,
+        ).pack(side=tk.LEFT)
+        ttk.Label(placement_row, text="°").pack(side=tk.LEFT, padx=(2, 12))
+        ttk.Checkbutton(
+            placement_row, text="Tile (repeat)", variable=self.tiled_var
+        ).pack(side=tk.LEFT)
+        ttk.Label(
+            placement_row,
+            text="Drag on the preview to place the watermark",
+            font=("TkDefaultFont", 9, "italic"),
+        ).pack(side=tk.LEFT, padx=(12, 0))
+
         self.status_var = tk.StringVar(value="No image loaded")
         ttk.Label(
             root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W
@@ -149,6 +188,8 @@ class WatermarkApp:
             preview_frame, anchor=tk.CENTER, text="Load an image to begin"
         )
         self.preview_label.pack(fill=tk.BOTH, expand=True)
+        self.preview_label.bind("<Button-1>", self._on_drag_move)
+        self.preview_label.bind("<B1-Motion>", self._on_drag_move)
 
     def load_image(self) -> None:
         """Ask for an image file and load it."""
@@ -259,12 +300,8 @@ class WatermarkApp:
         font_size_text = self.font_size_var.get().strip()
         font_size: int | None = None
         if font_size_text:
-            try:
-                font_size = int(font_size_text)
-            except ValueError:
-                raise ValueError(
-                    f"Font size must be a whole number, got {font_size_text!r}"
-                ) from None
+            font_size = self._parse_whole_number("Font size", font_size_text)
+        rotation = self._parse_whole_number("Rotation", self.rotation_var.get().strip())
         return WatermarkRequest(
             text=self.text_var.get(),
             opacity=self.opacity_var.get(),
@@ -272,7 +309,58 @@ class WatermarkApp:
             color=self.color_var.get().strip(),
             font_size=font_size,
             font_path=self._selected_font_path(),
+            rotation=rotation,
+            tiled=self.tiled_var.get(),
+            x=self.x_var.get(),
+            y=self.y_var.get(),
         )
+
+    @staticmethod
+    def _parse_whole_number(name: str, value: str) -> int:
+        try:
+            return int(value)
+        except ValueError:
+            raise ValueError(f"{name} must be a whole number, got {value!r}") from None
+
+    def _on_drag_move(self, event: PointerEvent) -> None:
+        """Follow the pointer over the preview, placing the watermark under it."""
+        if self.source is None or self._preview_photo is None:
+            return
+        photo_size = (self._preview_photo.width(), self._preview_photo.height())
+        label_size = (
+            self.preview_label.winfo_width(),
+            self.preview_label.winfo_height(),
+        )
+        if label_size[0] < photo_size[0] or label_size[1] < photo_size[1]:
+            return
+        origin = centered_origin(label_size, photo_size)
+        local_x = event.x - origin[0]
+        local_y = event.y - origin[1]
+        if not (0 <= local_x <= photo_size[0] and 0 <= local_y <= photo_size[1]):
+            return
+        fraction = point_to_fraction((event.x, event.y), origin, photo_size)
+        self.position_var.set(CUSTOM_POSITION)
+        self.x_var.set(fraction[0])
+        self.y_var.set(fraction[1])
+        self._refresh_preview_quietly()
+
+    def _refresh_preview_quietly(self) -> None:
+        """Re-render during a drag without raising any dialog."""
+        if self.source is None:
+            return
+        if validate_request(
+            self.text_var.get(),
+            has_image=True,
+            font_path=self._selected_font_path(),
+        ):
+            return
+        try:
+            request = self._current_request()
+        except ValueError:
+            return
+        marked = self._service.apply(self.source, request)
+        self._show_preview(marked)
+        self.status_var.set(f"Position: {self.x_var.get():.0%}, {self.y_var.get():.0%}")
 
     def _on_opacity(self, value: str) -> None:
         """Keep the percentage label in sync with the opacity slider."""
