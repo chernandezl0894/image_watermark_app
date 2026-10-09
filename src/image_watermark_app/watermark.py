@@ -35,8 +35,7 @@ def add_watermark(
     """
     _validate_text(text)
     _validate_opacity(opacity)
-    if position not in POSITIONS:
-        raise ValueError(f"Unknown position {position!r}; choose one of {POSITIONS}")
+    _validate_position(position)
 
     source = Path(input_path)
     if not source.is_file():
@@ -44,16 +43,62 @@ def add_watermark(
 
     try:
         with Image.open(source) as opened:
-            source_mode = opened.mode
-            has_alpha = (
-                source_mode in {"RGBA", "LA", "PA"} or "transparency" in opened.info
-            )
-            image = opened.convert("RGBA")
+            image = opened.copy()
     except (UnidentifiedImageError, OSError) as exc:
         raise InvalidImageError(f"Not a valid image file: {source}") from exc
 
-    marked = _stamp(
-        image, text, opacity=opacity, position=position, margin_ratio=margin_ratio
+    return save_stamped(
+        image,
+        output_path,
+        text,
+        opacity=opacity,
+        position=position,
+        margin_ratio=margin_ratio,
+    )
+
+
+def stamp_image(
+    image: Image.Image,
+    text: str,
+    *,
+    opacity: float = DEFAULT_OPACITY,
+    position: str = DEFAULT_POSITION,
+    margin_ratio: float = 0.03,
+) -> Image.Image:
+    """Return an RGBA copy of ``image`` with ``text`` stamped on it."""
+    _validate_text(text)
+    _validate_opacity(opacity)
+    _validate_position(position)
+    return _stamp(
+        image.convert("RGBA"),
+        text,
+        opacity=opacity,
+        position=position,
+        margin_ratio=margin_ratio,
+    )
+
+
+def save_stamped(
+    image: Image.Image,
+    output_path: str | Path,
+    text: str,
+    *,
+    opacity: float = DEFAULT_OPACITY,
+    position: str = DEFAULT_POSITION,
+    margin_ratio: float = 0.03,
+) -> Path:
+    """Stamp ``text`` on an in-memory ``image`` and save it to ``output_path``.
+
+    Returns the path where the image was written.
+    """
+    source_mode = image.mode
+    has_alpha = source_mode in {"RGBA", "LA", "PA"} or "transparency" in image.info
+    marked = stamp_image(
+        image,
+        text,
+        opacity=opacity,
+        position=position,
+        margin_ratio=margin_ratio,
     )
 
     destination = Path(output_path)
@@ -76,6 +121,11 @@ def _validate_text(text: str) -> None:
 def _validate_opacity(opacity: float) -> None:
     if not 0.0 <= opacity <= 1.0:
         raise ValueError(f"Opacity must be between 0.0 and 1.0, got {opacity}")
+
+
+def _validate_position(position: str) -> None:
+    if position not in POSITIONS:
+        raise ValueError(f"Unknown position {position!r}; choose one of {POSITIONS}")
 
 
 def _match_output_mode(

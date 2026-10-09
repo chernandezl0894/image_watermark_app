@@ -8,6 +8,8 @@ from image_watermark_app.watermark import (
     POSITIONS,
     InvalidImageError,
     add_watermark,
+    save_stamped,
+    stamp_image,
 )
 
 
@@ -160,3 +162,38 @@ def test_all_positions_render(tmp_path: Path) -> None:
             source, tmp_path / f"out_{position}.png", "Crissis", position=position
         )
         assert result.is_file()
+
+
+def test_stamp_image_returns_marked_copy() -> None:
+    original = Image.new("RGB", (300, 200), (30, 60, 90))
+    marked = stamp_image(original, "Crissis")
+    assert marked.mode == "RGBA"
+    assert marked.size == original.size
+    assert ImageChops.difference(original, marked.convert("RGB")).getbbox()
+
+
+def test_stamp_image_does_not_mutate_original() -> None:
+    original = Image.new("RGB", (300, 200), (30, 60, 90))
+    stamp_image(original, "Crissis")
+    assert (
+        ImageChops.difference(
+            original, Image.new("RGB", (300, 200), (30, 60, 90))
+        ).getbbox()
+        is None
+    )
+
+
+def test_stamp_image_rejects_empty_text() -> None:
+    original = Image.new("RGB", (300, 200), (30, 60, 90))
+    with pytest.raises(ValueError, match="must not be empty"):
+        stamp_image(original, "")
+
+
+def test_save_stamped_writes_file(tmp_path: Path) -> None:
+    original = Image.new("RGB", (300, 200), (30, 60, 90))
+    destination = tmp_path / "out.png"
+    assert save_stamped(original, destination, "Crissis") == destination
+    with Image.open(destination) as saved:
+        assert saved.size == (300, 200)
+        assert saved.mode == "RGB"
+        assert ImageChops.difference(original, saved).getbbox()

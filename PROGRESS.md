@@ -26,14 +26,14 @@
 
 ## Phase 3 — Tkinter GUI + tests
 
-- [ ] 3.1 Implement `app.py`: main window with image preview
-- [ ] 3.2 "Load Image" button (`filedialog`)
-- [ ] 3.3 Watermark text field (default `"Crissis"`)
-- [ ] 3.4 "Apply Watermark" button (updates preview) and "Save As..." button (`asksaveasfilename`)
-- [ ] 3.5 Error dialogs with `messagebox`
-- [ ] 3.6 Tests: window smoke test + GUI helper tests
-- [ ] 3.7 Run quality checks
-- [ ] 3.8 Commit: `feat: add Tkinter GUI with load, preview and save`
+- [x] 3.1 Implement `app.py`: main window with image preview
+- [x] 3.2 "Load Image" button (`filedialog`)
+- [x] 3.3 Watermark text field (default `"Crissis"`)
+- [x] 3.4 "Apply Watermark" button (updates preview) and "Save As..." button (`asksaveasfilename`)
+- [x] 3.5 Error dialogs with `messagebox`
+- [x] 3.6 Tests: window smoke test + GUI helper tests
+- [x] 3.7 Run quality checks
+- [x] 3.8 Commit: `feat: add Tkinter GUI with load, preview and save`
 
 ## Phase 4 — Integration, polish, validations + tests
 
@@ -56,7 +56,7 @@
 | Phase | State  | Commit |
 | ----- | ------ | ------ |
 | 1     | done   | 339159f |
-| 2     | done   | (this commit) |
-| 3     | pending | —      |
+| 2     | done   | 8f58be2 |
+| 3     | done   | (this commit) |
 | 4     | pending | —      |
 | 5     | pending | —      |
