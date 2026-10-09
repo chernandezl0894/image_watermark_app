@@ -20,10 +20,11 @@ Load an image from your computer, stamp a text watermark on it, preview the resu
 
 - Load images in PNG, JPEG, BMP, GIF, WebP and TIFF
 - Watermark text is editable (default: `Crissis`)
-- Semi-transparent white text placed at the bottom-right corner (five positions available)
+- Watermark controls: opacity slider, position picker (five positions), text colour,
+  font size (auto by default) and custom TTF/OTF font selection
 - Live preview before exporting
 - Save the result as PNG, JPEG, BMP, GIF, WebP or TIFF
-- Friendly validation messages (no image loaded, empty text, invalid file, ...)
+- Friendly validation messages (no image loaded, empty text, missing font file, ...)
 
 ## Built with
 
@@ -66,9 +67,12 @@ uv run image-watermark-app
 
 1. **Load Image...** — pick a picture from your computer; it appears in the preview.
 2. **Watermark** — type the text you want to stamp (defaults to `Crissis`).
-3. **Apply Watermark** (or press **Enter** in the text field) — the preview updates with the
-   semi-transparent text in the bottom-right corner.
-4. **Save As...** — choose the destination; the suggested name is
+3. **Watermark options** — tune the controls: opacity slider, position picker,
+   text colour (**Choose...**), font size (blank = auto-scaled) and custom font
+   (**Browse...** for a TTF/OTF file, **Clear** to restore the default font).
+4. **Apply Watermark** (or press **Enter** in the text field) — the preview updates
+   with the watermark rendered using the current controls.
+5. **Save As...** — choose the destination; the suggested name is
    `original_watermarked.ext`.
 
 ### Programmatic usage
@@ -86,9 +90,20 @@ service = WatermarkService(PillowImageRepository())
 service.watermark_file(
     Path("input.png"),
     Path("output.png"),
-    WatermarkRequest(text="Crissis", opacity=0.5, position="bottom-right"),
+    WatermarkRequest(
+        text="Crissis",
+        opacity=0.5,
+        position="bottom-right",
+        color="#FFFFFF",
+        font_size=48,
+        font_path=Path("brand.ttf"),
+    ),
 )
 ```
+
+`color` accepts a hex string like `#RRGGBB`; `font_size=None` scales the text with
+the image; `font_path=None` uses the built-in font (an unreadable file falls back
+to it instead of failing).
 
 ## Architecture
 
@@ -190,8 +205,6 @@ is available.
 
 ## Future improvements
 
-- **Watermark controls**: opacity slider, position picker, text colour, font size and
-  custom font (TTF) selection
 - **Visual placement**: drag the watermark over the preview, tilt/rotation and tiled
   (repeated) watermarks
 - **Logo watermark**: stamp an image/logo in addition to text

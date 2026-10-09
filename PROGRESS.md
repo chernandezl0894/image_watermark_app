@@ -53,6 +53,17 @@
 - [x] 5.2 Add future improvements list to `README.md`
 - [x] 5.3 Commit: `docs: add README with architecture and future improvements`
 
+## Phase 6 — Watermark controls
+
+- [x] 6.1 Domain: `WatermarkRequest` gains `color` (hex `#RRGGBB`), `font_size` (optional, auto when `None`) and `font_path` (optional TTF/OTF) with invariants
+- [x] 6.2 Domain: `stamp_image` honours colour, explicit font size and custom font file (falls back to the built-in font on unreadable files)
+- [x] 6.3 Application: `validate_request` reports missing font files
+- [x] 6.4 Presentation: opacity slider with percentage label, position combobox, colour picker with swatch, font-size spinbox (blank = auto) and font file browse/clear
+- [x] 6.5 Presentation: shared `_current_request()` helper; apply/save catch invalid control values and warn the user
+- [x] 6.6 Tests: domain (colour, font size, TTF rendering, fallback), validation (font file), view (control defaults, colour/font dialogs, invalid values, controls reaching the service)
+- [x] 6.7 Update `README.md` (overview, usage, programmatic example) and drop the item from future improvements
+- [x] 6.8 Run quality checks (pytest, ruff, mypy)
+
 ---
 
 ## Status
@@ -64,3 +75,4 @@
 | 3     | done   | 022b31a |
 | 4     | done   | 04bc1e9 |
 | 5     | done   | (this commit) |
+| 6     | done   | (this commit) |

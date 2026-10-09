@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import pytest
 from PIL import Image, ImageChops
 
 from image_watermark_app.domain import (
+    DEFAULT_COLOR,
     DEFAULT_OPACITY,
     DEFAULT_POSITION,
     DEFAULT_TEXT,
@@ -38,6 +41,9 @@ def test_request_defaults() -> None:
     assert request.opacity == DEFAULT_OPACITY
     assert request.position == DEFAULT_POSITION
     assert request.margin_ratio == 0.03
+    assert request.color == DEFAULT_COLOR == "#FFFFFF"
+    assert request.font_size is None
+    assert request.font_path is None
 
 
 @pytest.mark.parametrize("text", ["", "   "])
@@ -61,6 +67,22 @@ def test_request_rejects_unknown_position() -> None:
 def test_request_rejects_out_of_range_margin(margin: float) -> None:
     with pytest.raises(ValueError, match="Margin ratio must be"):
         WatermarkRequest(text="Crissis", margin_ratio=margin)
+
+
+@pytest.mark.parametrize("color", ["red", "#FFF", "#GGGGGG", "ffffff", "#1234567", ""])
+def test_request_rejects_invalid_color(color: str) -> None:
+    with pytest.raises(ValueError, match="Color must be"):
+        WatermarkRequest(text="Crissis", color=color)
+
+
+@pytest.mark.parametrize("font_size", [0, -5])
+def test_request_rejects_non_positive_font_size(font_size: int) -> None:
+    with pytest.raises(ValueError, match="Font size must be"):
+        WatermarkRequest(text="Crissis", font_size=font_size)
+
+
+def test_request_accepts_minimal_font_size() -> None:
+    assert WatermarkRequest(text="Crissis", font_size=1).font_size == 1
 
 
 def test_invalid_image_error_is_a_value_error() -> None:
@@ -91,6 +113,56 @@ def test_stamp_places_text_in_expected_area(position: str) -> None:
     diff = ImageChops.difference(original, marked.convert("RGB")).getbbox()
     assert diff is not None
     assert QUADRANT_ASSERTIONS[position](diff, original)
+
+
+def test_stamp_applies_requested_color() -> None:
+    original = make_image()
+    marked = stamp_image(
+        original,
+        WatermarkRequest(text="X", opacity=1.0, color="#FF0000", font_size=60),
+    )
+    colors = marked.getcolors(maxcolors=marked.width * marked.height)
+    assert colors is not None
+    assert any(pixel == (255, 0, 0, 255) for _, pixel in colors)
+
+
+def test_stamp_font_size_controls_text_scale() -> None:
+    original = make_image()
+    small = stamp_image(original, WatermarkRequest(text=DEFAULT_TEXT, font_size=12))
+    large = stamp_image(original, WatermarkRequest(text=DEFAULT_TEXT, font_size=60))
+    small_diff = ImageChops.difference(original, small.convert("RGB")).getbbox()
+    large_diff = ImageChops.difference(original, large.convert("RGB")).getbbox()
+    assert small_diff is not None
+    assert large_diff is not None
+    small_area = (small_diff[2] - small_diff[0]) * (small_diff[3] - small_diff[1])
+    large_area = (large_diff[2] - large_diff[0]) * (large_diff[3] - large_diff[1])
+    assert large_area > small_area
+
+
+def test_stamp_falls_back_when_font_file_missing(tmp_path: Path) -> None:
+    original = make_image()
+    request = WatermarkRequest(text=DEFAULT_TEXT, font_path=tmp_path / "nope.ttf")
+    marked = stamp_image(original, request)
+    assert marked.mode == "RGBA"
+    diff = ImageChops.difference(original, marked.convert("RGB")).getbbox()
+    assert diff is not None
+
+
+DEJAVU_FONT = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+
+
+@pytest.mark.skipif(not DEJAVU_FONT.is_file(), reason="DejaVu font not installed")
+def test_stamp_renders_with_custom_ttf() -> None:
+    original = make_image()
+    with_font = stamp_image(
+        original,
+        WatermarkRequest(text=DEFAULT_TEXT, font_size=40, font_path=DEJAVU_FONT),
+    )
+    default_font = stamp_image(
+        original, WatermarkRequest(text=DEFAULT_TEXT, font_size=40)
+    )
+    diff = ImageChops.difference(with_font.convert("RGB"), default_font.convert("RGB"))
+    assert diff.getbbox() is not None
 
 
 def test_stamp_honours_opacity_extremes() -> None:

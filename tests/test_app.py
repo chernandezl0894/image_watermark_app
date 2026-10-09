@@ -1,6 +1,6 @@
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox
+from tkinter import colorchooser, filedialog, messagebox
 
 import pytest
 from PIL import Image
@@ -24,6 +24,11 @@ def test_window_opens_with_defaults(gui: WatermarkApp) -> None:
     assert gui.text_var.get() == "Crissis"
     assert gui.status_var.get() == "No image loaded"
     assert gui.source is None
+    assert gui.opacity_var.get() == pytest.approx(0.5)
+    assert gui.position_var.get() == "bottom-right"
+    assert gui.color_var.get() == "#FFFFFF"
+    assert gui.font_size_var.get() == ""
+    assert gui.font_path_var.get() == ""
 
 
 def test_load_from_path_shows_preview(gui: WatermarkApp, tmp_path: Path) -> None:
@@ -174,6 +179,64 @@ def test_save_cancel_writes_nothing(
     assert list(tmp_path.glob("*_watermarked.*")) == []
 
 
+def test_choose_color_updates_color_var(
+    gui: WatermarkApp, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(colorchooser, "askcolor", lambda **kwargs: (None, "#112233"))
+    gui.choose_color()
+    assert gui.color_var.get() == "#112233"
+
+
+def test_choose_color_cancel_keeps_previous_color(
+    gui: WatermarkApp, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(colorchooser, "askcolor", lambda **kwargs: (None, None))
+    gui.choose_color()
+    assert gui.color_var.get() == "#FFFFFF"
+
+
+def test_browse_font_sets_font_path(
+    gui: WatermarkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    font = tmp_path / "custom.ttf"
+    font.write_bytes(b"\0")
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **kwargs: str(font))
+    gui.browse_font()
+    assert gui.font_path_var.get() == str(font)
+
+
+def test_clear_font_resets_to_default(gui: WatermarkApp) -> None:
+    gui.font_path_var.set("/tmp/custom.ttf")
+    gui.clear_font()
+    assert gui.font_path_var.get() == ""
+
+
+def test_apply_with_invalid_font_size_warns(
+    gui: WatermarkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        messagebox, "showwarning", lambda title, message: warnings.append(message)
+    )
+    gui.load_from_path(make_test_image(tmp_path / "photo.png"))
+    gui.font_size_var.set("abc")
+    gui.apply_watermark()
+    assert warnings == ["Font size must be a whole number, got 'abc'"]
+
+
+def test_apply_with_missing_font_warns(
+    gui: WatermarkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        messagebox, "showwarning", lambda title, message: warnings.append(message)
+    )
+    gui.load_from_path(make_test_image(tmp_path / "photo.png"))
+    gui.font_path_var.set(str(tmp_path / "gone.ttf"))
+    gui.apply_watermark()
+    assert warnings == [f"Font file not found: {tmp_path / 'gone.ttf'}"]
+
+
 class RecordingService:
     """Fake WatermarkUseCases proving the view depends only on the protocol."""
 
@@ -222,3 +285,25 @@ def test_view_uses_injected_service(
     assert service.saved == [destination]
     assert destination.read_bytes() == b"fake"
     assert len(infos) == 1
+
+
+def test_controls_reach_the_service(app_root: tk.Tk, tmp_path: Path) -> None:
+    service = RecordingService()
+    view = WatermarkApp(app_root, service=service)
+    font = tmp_path / "custom.ttf"
+    font.write_bytes(b"\0")
+
+    view.load_from_path(tmp_path / "ignored-by-fake.png")
+    view.opacity_var.set(0.8)
+    view.position_var.set("top-left")
+    view.color_var.set("#00FF00")
+    view.font_size_var.set("48")
+    view.font_path_var.set(str(font))
+    view.apply_watermark()
+
+    [request] = service.applied
+    assert request.opacity == pytest.approx(0.8)
+    assert request.position == "top-left"
+    assert request.color == "#00FF00"
+    assert request.font_size == 48
+    assert request.font_path == font

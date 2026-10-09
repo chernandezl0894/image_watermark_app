@@ -1,5 +1,7 @@
 """Pure watermarking operations on in-memory images (no file or UI access)."""
 
+from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
 
 from image_watermark_app.domain.models import WatermarkRequest
@@ -9,8 +11,12 @@ def stamp_image(image: Image.Image, request: WatermarkRequest) -> Image.Image:
     """Return an RGBA copy of ``image`` with the request's text stamped on it."""
     canvas = image.convert("RGBA")
     width, height = canvas.size
-    font_size = max(12, round(min(width, height) * 0.06))
-    font = ImageFont.load_default(size=font_size)
+    font_size = (
+        request.font_size
+        if request.font_size is not None
+        else max(12, round(min(width, height) * 0.06))
+    )
+    font = _load_font(font_size, request.font_path)
 
     overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
@@ -31,9 +37,25 @@ def stamp_image(image: Image.Image, request: WatermarkRequest) -> Image.Image:
         (left, top),
     )
     alpha = round(request.opacity * 255)
-    draw.text((x, y), request.text, font=font, fill=(255, 255, 255, alpha))
+    red, green, blue = _parse_hex_color(request.color)
+    draw.text((x, y), request.text, font=font, fill=(red, green, blue, alpha))
 
     return Image.alpha_composite(canvas, overlay)
+
+
+def _load_font(
+    font_size: int, font_path: Path | None
+) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    if font_path is not None:
+        try:
+            return ImageFont.truetype(str(font_path), font_size)
+        except OSError:
+            pass
+    return ImageFont.load_default(size=font_size)
+
+
+def _parse_hex_color(color: str) -> tuple[int, int, int]:
+    return int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
 
 
 def _coordinates(

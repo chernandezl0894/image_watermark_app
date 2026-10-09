@@ -1,6 +1,7 @@
 """Domain layer: entities and pure watermarking rules."""
 
 from image_watermark_app.domain.models import (
+    DEFAULT_COLOR,
     DEFAULT_OPACITY,
     DEFAULT_POSITION,
     DEFAULT_TEXT,
@@ -12,6 +13,7 @@ from image_watermark_app.domain.models import (
 from image_watermark_app.domain.watermark import stamp_image
 
 __all__ = [
+    "DEFAULT_COLOR",
     "DEFAULT_OPACITY",
     "DEFAULT_POSITION",
     "DEFAULT_TEXT",

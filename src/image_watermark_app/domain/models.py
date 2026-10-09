@@ -1,11 +1,14 @@
 """Domain entities: validated data with no dependencies on I/O or the UI."""
 
+import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Final
 
 DEFAULT_TEXT: Final = "Crissis"
 DEFAULT_OPACITY: Final = 0.5
 DEFAULT_POSITION: Final = "bottom-right"
+DEFAULT_COLOR: Final = "#FFFFFF"
 POSITIONS: Final = (
     "top-left",
     "top-right",
@@ -14,6 +17,7 @@ POSITIONS: Final = (
     "center",
 )
 MAX_MARGIN_RATIO: Final = 0.5
+HEX_COLOR_PATTERN: Final = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
 class InvalidImageError(ValueError):
@@ -32,6 +36,9 @@ class WatermarkRequest:
     opacity: float = DEFAULT_OPACITY
     position: str = DEFAULT_POSITION
     margin_ratio: float = 0.03
+    color: str = DEFAULT_COLOR
+    font_size: int | None = None
+    font_path: Path | None = None
 
     def __post_init__(self) -> None:
         if not self.text or not self.text.strip():
@@ -47,3 +54,9 @@ class WatermarkRequest:
                 f"Margin ratio must be between 0.0 and {MAX_MARGIN_RATIO}, "
                 f"got {self.margin_ratio}"
             )
+        if not HEX_COLOR_PATTERN.match(self.color):
+            raise ValueError(
+                f"Color must be a hex string like #RRGGBB, got {self.color!r}"
+            )
+        if self.font_size is not None and self.font_size < 1:
+            raise ValueError(f"Font size must be at least 1, got {self.font_size}")

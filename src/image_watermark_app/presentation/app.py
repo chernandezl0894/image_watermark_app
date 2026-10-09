@@ -2,20 +2,31 @@
 
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import colorchooser, filedialog, messagebox, ttk
 
 from PIL import Image, ImageTk
 
 from image_watermark_app.application.ports import WatermarkUseCases
 from image_watermark_app.application.services import WatermarkService
 from image_watermark_app.application.validation import validate_request
-from image_watermark_app.domain.models import DEFAULT_TEXT, WatermarkRequest
+from image_watermark_app.domain.models import (
+    DEFAULT_COLOR,
+    DEFAULT_OPACITY,
+    DEFAULT_POSITION,
+    DEFAULT_TEXT,
+    POSITIONS,
+    WatermarkRequest,
+)
 from image_watermark_app.infrastructure.pillow_repository import PillowImageRepository
 from image_watermark_app.presentation.preview import fit_within, flatten_for_preview
 
 PREVIEW_MAX = (640, 420)
 IMAGE_FILETYPES = [
     ("Image files", "*.png *.jpg *.jpeg *.bmp *.gif *.webp *.tif *.tiff"),
+    ("All files", "*.*"),
+]
+FONT_FILETYPES = [
+    ("Font files", "*.ttf *.otf *.ttc"),
     ("All files", "*.*"),
 ]
 
@@ -41,7 +52,7 @@ class WatermarkApp:
         root.title("Image Watermark App")
         root.minsize(700, 540)
 
-        controls = ttk.Frame(root, padding=8)
+        controls = ttk.Frame(root, padding=(8, 8, 8, 0))
         controls.pack(fill=tk.X, side=tk.TOP)
         ttk.Button(controls, text="Load Image...", command=self.load_image).pack(
             side=tk.LEFT
@@ -51,6 +62,72 @@ class WatermarkApp:
         entry = ttk.Entry(controls, textvariable=self.text_var, width=24)
         entry.pack(side=tk.LEFT)
         entry.bind("<Return>", self._on_return)
+
+        self.opacity_var = tk.DoubleVar(value=DEFAULT_OPACITY)
+        self.position_var = tk.StringVar(value=DEFAULT_POSITION)
+        self.color_var = tk.StringVar(value=DEFAULT_COLOR)
+        self.font_size_var = tk.StringVar(value="")
+        self.font_path_var = tk.StringVar(value="")
+
+        options = ttk.LabelFrame(root, text="Watermark options", padding=8)
+        options.pack(fill=tk.X, side=tk.TOP, padx=8, pady=4)
+
+        position_row = ttk.Frame(options)
+        position_row.pack(fill=tk.X)
+        ttk.Label(position_row, text="Opacity:").pack(side=tk.LEFT)
+        ttk.Scale(
+            position_row,
+            from_=0.0,
+            to=1.0,
+            variable=self.opacity_var,
+            orient=tk.HORIZONTAL,
+            command=self._on_opacity,
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 6))
+        self.opacity_label = ttk.Label(
+            position_row, text=f"{DEFAULT_OPACITY:.0%}", width=5, anchor=tk.E
+        )
+        self.opacity_label.pack(side=tk.LEFT)
+        ttk.Label(position_row, text="Position:").pack(side=tk.LEFT, padx=(12, 4))
+        ttk.Combobox(
+            position_row,
+            textvariable=self.position_var,
+            values=POSITIONS,
+            state="readonly",
+            width=14,
+        ).pack(side=tk.LEFT)
+
+        style_row = ttk.Frame(options)
+        style_row.pack(fill=tk.X, pady=(6, 0))
+        ttk.Label(style_row, text="Text colour:").pack(side=tk.LEFT)
+        self.color_swatch = tk.Label(
+            style_row, text="", width=4, relief=tk.SUNKEN, bg=DEFAULT_COLOR
+        )
+        self.color_swatch.pack(side=tk.LEFT, padx=(4, 4))
+        ttk.Button(style_row, text="Choose...", command=self.choose_color).pack(
+            side=tk.LEFT
+        )
+        ttk.Label(style_row, text="Font size:").pack(side=tk.LEFT, padx=(12, 4))
+        ttk.Spinbox(
+            style_row,
+            from_=1,
+            to=500,
+            width=6,
+            textvariable=self.font_size_var,
+        ).pack(side=tk.LEFT)
+        ttk.Label(style_row, text="(auto)").pack(side=tk.LEFT, padx=(4, 0))
+        ttk.Label(style_row, text="Font:").pack(side=tk.LEFT, padx=(12, 4))
+        ttk.Entry(
+            style_row,
+            textvariable=self.font_path_var,
+            width=22,
+            state="readonly",
+        ).pack(side=tk.LEFT)
+        ttk.Button(style_row, text="Browse...", command=self.browse_font).pack(
+            side=tk.LEFT, padx=(4, 0)
+        )
+        ttk.Button(style_row, text="Clear", command=self.clear_font).pack(
+            side=tk.LEFT, padx=(4, 0)
+        )
 
         self.status_var = tk.StringVar(value="No image loaded")
         ttk.Label(
@@ -95,25 +172,28 @@ class WatermarkApp:
 
     def apply_watermark(self) -> None:
         """Render the watermark over the loaded image and refresh the preview."""
-        text = self.text_var.get()
-        errors = validate_request(text, has_image=self.source is not None)
-        if errors:
-            messagebox.showwarning("Cannot apply watermark", "\n".join(errors))
+        if not self._validate("Cannot apply watermark"):
             return
-        assert self.source is not None  # guaranteed by validate_request above
-        request = WatermarkRequest(text=text)
+        assert self.source is not None  # guaranteed by _validate above
+        try:
+            request = self._current_request()
+        except ValueError as exc:
+            messagebox.showwarning("Cannot apply watermark", str(exc))
+            return
         marked = self._service.apply(self.source, request)
         self._show_preview(marked)
         self.status_var.set("Watermark applied — use Save As to export")
 
     def save_image(self) -> None:
-        """Stamp with the current text and write the result to a file."""
-        text = self.text_var.get()
-        errors = validate_request(text, has_image=self.source is not None)
-        if errors:
-            messagebox.showwarning("Cannot save", "\n".join(errors))
+        """Stamp with the current controls and write the result to a file."""
+        if not self._validate("Cannot save"):
             return
-        assert self.source is not None  # guaranteed by validate_request above
+        assert self.source is not None  # guaranteed by _validate above
+        try:
+            request = self._current_request()
+        except ValueError as exc:
+            messagebox.showwarning("Cannot save", str(exc))
+            return
 
         suggested = "watermarked.png"
         if self.source_path is not None:
@@ -129,14 +209,74 @@ class WatermarkApp:
             return
 
         try:
-            saved = self._service.save(
-                self.source, WatermarkRequest(text=text), Path(path)
-            )
+            saved = self._service.save(self.source, request, Path(path))
         except (OSError, ValueError) as exc:
             messagebox.showerror("Save failed", str(exc))
             return
         messagebox.showinfo("Saved", f"Image saved to:\n{saved}")
         self.status_var.set(f"Saved: {Path(saved).name}")
+
+    def choose_color(self) -> None:
+        """Open the system colour picker and store the chosen text colour."""
+        result = colorchooser.askcolor(
+            color=self.color_var.get(), title="Choose text colour"
+        )
+        _rgb, hex_color = result
+        if hex_color:
+            self.color_var.set(hex_color)
+            self.color_swatch.configure(bg=hex_color)
+
+    def browse_font(self) -> None:
+        """Pick a custom TTF/OTF font file for the watermark text."""
+        path = filedialog.askopenfilename(
+            title="Choose a font", filetypes=FONT_FILETYPES
+        )
+        if path:
+            self.font_path_var.set(path)
+
+    def clear_font(self) -> None:
+        """Fall back to the default built-in font."""
+        self.font_path_var.set("")
+
+    def _validate(self, title: str) -> bool:
+        """Run the application validation and warn the user on failure."""
+        errors = validate_request(
+            self.text_var.get(),
+            has_image=self.source is not None,
+            font_path=self._selected_font_path(),
+        )
+        if errors:
+            messagebox.showwarning(title, "\n".join(errors))
+            return False
+        return True
+
+    def _selected_font_path(self) -> Path | None:
+        font_path = self.font_path_var.get().strip()
+        return Path(font_path) if font_path else None
+
+    def _current_request(self) -> WatermarkRequest:
+        """Read every control into a validated WatermarkRequest."""
+        font_size_text = self.font_size_var.get().strip()
+        font_size: int | None = None
+        if font_size_text:
+            try:
+                font_size = int(font_size_text)
+            except ValueError:
+                raise ValueError(
+                    f"Font size must be a whole number, got {font_size_text!r}"
+                ) from None
+        return WatermarkRequest(
+            text=self.text_var.get(),
+            opacity=self.opacity_var.get(),
+            position=self.position_var.get(),
+            color=self.color_var.get().strip(),
+            font_size=font_size,
+            font_path=self._selected_font_path(),
+        )
+
+    def _on_opacity(self, value: str) -> None:
+        """Keep the percentage label in sync with the opacity slider."""
+        self.opacity_label.configure(text=f"{float(value):.0%}")
 
     def _on_return(self, event: tk.Event[tk.Entry]) -> str:
         """Enter in the text field applies the watermark."""
