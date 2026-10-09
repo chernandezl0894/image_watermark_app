@@ -1,35 +1,41 @@
 {
   "languages": {
     "Python": {
+      "code_actions_on_format": {
+        "source.organizeImports.ruff": true,
+      },
       "tab_size": 4,
-      "language_servers": {
-        "pyright": {},
-        "rust-analyzer": null
-      }
-    }
+      "language_servers": ["pyright", "!basedpyright"],
+      "formatter": "auto",
+    },
   },
   "lsp": {
+    "basedpyright": {
+      "settings": {
+        "basedpyright": {
+          "analysis": {
+            "diagnosticMode": "workspace",
+            "inlayHints": {
+              "callArgumentNames": false,
+            },
+          },
+        },
+      },
+    },
     "pyright": {
       "settings": {
         "python": {
           "interpreterPath": ".venv/bin/python",
-          "pythonPaths": ["src"]
+          "pythonPaths": ["src"],
         },
-        "typeCheckingMode": "strict"
-      }
+        "typeCheckingMode": "strict",
+      },
     },
     "ruff": {
       "settings": {
-        "fixAll": ["source.fixAll.ruff", "source.organizeImports.ruff"]
-      }
-    }
+        "fixAll": ["source.fixAll.ruff", "source.organizeImports.ruff"],
+      },
+    },
   },
-  "formatters": {
-    "python": {
-      "formatter": "language_server",
-      "language_servers": ["ruff"],
-      "format_on_save": "on"
-    }
-  },
-  "vim_mode": false
+  "format_on_save": "on"
 }
