@@ -1,12 +1,17 @@
 {
   "languages": {
     "Python": {
+      "format_on_save": "on",
       "code_actions_on_format": {
         "source.organizeImports.ruff": true,
       },
+      "formatter": {
+        "language_server": {
+          "name": "ruff",
+        },
+      },
       "tab_size": 4,
-      "language_servers": ["pyright", "!basedpyright"],
-      "formatter": "auto",
+      "language_servers": ["!pyright", "basedpyright"],
     },
   },
   "lsp": {
@@ -22,20 +27,5 @@
         },
       },
     },
-    "pyright": {
-      "settings": {
-        "python": {
-          "interpreterPath": ".venv/bin/python",
-          "pythonPaths": ["src"],
-        },
-        "typeCheckingMode": "strict",
-      },
-    },
-    "ruff": {
-      "settings": {
-        "fixAll": ["source.fixAll.ruff", "source.organizeImports.ruff"],
-      },
-    },
   },
-  "format_on_save": "on"
 }
