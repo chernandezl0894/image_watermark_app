@@ -74,6 +74,17 @@
 - [x] 7.6 Update `README.md` (overview, usage, programmatic placement) and drop the item from future improvements
 - [x] 7.7 Run quality checks (pytest, ruff, mypy, pre-commit)
 
+## Phase 8 — Packaging + app icon
+
+- [x] 8.1 Assets: track `scripts/generate_icon.py`, `src/image_watermark_app/assets/` (icon.png + icon.ico) and `tests/test_assets.py`
+- [x] 8.2 Presentation: `assets.py` resolves bundled asset paths in dev and frozen builds; the window shows the app icon (silent fallback if missing)
+- [x] 8.3 PyInstaller: `image_watermark_app.spec` (one-file, windowed, app icon, bundled assets and Tcl/Tk libraries of the uv-managed Python)
+- [x] 8.4 Add `pyinstaller` to the dev dependency group
+- [x] 8.5 Tests: asset path resolution (dev/frozen/fallback), window icon applied, silent failures
+- [x] 8.6 Build the Linux executable and smoke-test it
+- [x] 8.7 Update `README.md` (packaging section, commands, structure) and drop the item from future improvements
+- [x] 8.8 Run quality checks (pytest, ruff, mypy, pre-commit)
+
 ---
 
 ## Status
@@ -86,4 +97,5 @@
 | 4     | done   | 04bc1e9 |
 | 5     | done   | f02d3c4 |
 | 6     | done   | 50b0a17 |
-| 7     | done   | (this commit) |
+| 7     | done   | 0825f7c |
+| 8     | done   | (this commit) |

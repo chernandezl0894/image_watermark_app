@@ -12,6 +12,7 @@ A desktop application to add a text watermark to images, built with Python, Tkin
 - [Project structure](#project-structure)
 - [Development](#development)
 - [Testing](#testing)
+- [Packaging](#packaging)
 - [Future improvements](#future-improvements)
 
 ## Overview
@@ -40,6 +41,7 @@ Load an image from your computer, stamp a text watermark on it, preview the resu
 | [mypy](https://mypy.readthedocs.io/) | Static type checking (strict mode) |
 | [pytest](https://docs.pytest.org/) | Test runner |
 | [pre-commit](https://pre-commit.com/) | Git hooks for automatic checks |
+| [PyInstaller](https://pyinstaller.org/) | Standalone executable packaging |
 
 ## Getting started
 
@@ -168,10 +170,13 @@ image_watermark_app/
 ├── REQUIREMENTS.md          # Original requirements
 ├── PROGRESS.md              # Phase-by-phase development log
 ├── pyproject.toml           # Project metadata + ruff/mypy/pytest config
+├── image_watermark_app.spec # PyInstaller build config (one-file executable)
 ├── .pre-commit-config.yaml  # ruff, ruff-format and mypy hooks
 ├── .editorconfig
 ├── .zed/settings.json       # Zed editor settings
 ├── .vscode/settings.json    # VS Code settings
+├── scripts/
+│   └── generate_icon.py     # Regenerates the app icons deterministically
 ├── src/image_watermark_app/
 │   ├── domain/
 │   │   ├── models.py        # WatermarkRequest entity + errors
@@ -182,9 +187,11 @@ image_watermark_app/
 │   │   └── validation.py    # User-facing input validation
 │   ├── infrastructure/
 │   │   └── pillow_repository.py
-│   └── presentation/
-│       ├── app.py           # Tkinter view (entry point)
-│       └── preview.py       # Preview scaling/formatting helpers
+│   ├── presentation/
+│   │   ├── app.py           # Tkinter view (entry point)
+│   │   ├── assets.py        # Bundled-asset path resolution (dev and frozen)
+│   │   └── preview.py       # Preview scaling/formatting helpers
+│   └── assets/              # icon.png + icon.ico (window and build icon)
 └── tests/                   # One test module per layer
 ```
 
@@ -202,6 +209,7 @@ image_watermark_app/
 | `uv run ruff format .` | Format the code |
 | `uv run mypy` | Type check (strict) |
 | `uv run pre-commit run --all-files` | Run every git hook on the whole repo |
+| `uv run pyinstaller image_watermark_app.spec` | Build the standalone executable |
 | `uv add <package>` | Add a runtime dependency |
 | `uv add --dev <package>` | Add a development dependency |
 
@@ -221,6 +229,27 @@ The suite mirrors the architecture: domain, repository, service, validation, pre
 GUI tests. GUI tests create a real Tk window and are skipped automatically when no display
 is available.
 
+## Packaging
+
+Build a standalone executable with [PyInstaller](https://pyinstaller.org/) — the result
+runs without Python installed:
+
+```bash
+uv sync
+uv run pyinstaller image_watermark_app.spec
+```
+
+The single-file binary lands in `dist/` (`ImageWatermarkApp`, or
+`ImageWatermarkApp.exe` on Windows):
+
+- One-file, no console window, with the app icon embedded (Windows/macOS; on Linux
+  the icon belongs to the file you assign it to in the desktop).
+- The assets used for the window icon are bundled inside the executable.
+- Builds are platform-specific: run the same spec on each OS you want to target.
+- The window and file icons come from `src/image_watermark_app/assets/`
+  (`icon.png` + `icon.ico`); regenerate both deterministically with
+  `uv run python scripts/generate_icon.py`.
+
 ## Future improvements
 
 - **Logo watermark**: stamp an image/logo in addition to text
@@ -230,7 +259,6 @@ is available.
 - **CLI interface** for scripting (building on `WatermarkService`)
 - **Persistent settings**: remember the last folder, opacity and position
 - **Localization**: Spanish/English UI strings
-- **Packaging**: standalone executables (PyInstaller/Briefcase) and an app icon
 - **CI pipeline**: GitHub Actions running lint, type check and tests with coverage
 - **License**: add a `LICENSE` file to define reuse terms
 

@@ -20,6 +20,7 @@ from image_watermark_app.domain.models import (
     WatermarkRequest,
 )
 from image_watermark_app.infrastructure.pillow_repository import PillowImageRepository
+from image_watermark_app.presentation.assets import asset_path
 from image_watermark_app.presentation.preview import (
     centered_origin,
     fit_within,
@@ -36,6 +37,19 @@ FONT_FILETYPES = [
     ("Font files", "*.ttf *.otf *.ttc"),
     ("All files", "*.*"),
 ]
+
+
+def apply_window_icon(root: tk.Tk) -> tk.PhotoImage | None:
+    """Give the window the app icon, or do nothing if it cannot be loaded."""
+    icon_file = asset_path("icon.png")
+    if not icon_file.is_file():
+        return None
+    try:
+        photo = tk.PhotoImage(file=str(icon_file))
+        root.iconphoto(True, photo)
+    except tk.TclError:
+        return None
+    return photo
 
 
 class PointerEvent(Protocol):
@@ -65,6 +79,8 @@ class WatermarkApp:
 
         root.title("Image Watermark App")
         root.minsize(700, 540)
+        # Keeps the PhotoImage alive for as long as the window lives.
+        self.window_icon: tk.PhotoImage | None = apply_window_icon(root)
 
         controls = ttk.Frame(root, padding=(8, 8, 8, 0))
         controls.pack(fill=tk.X, side=tk.TOP)

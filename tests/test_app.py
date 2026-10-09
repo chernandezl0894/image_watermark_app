@@ -393,3 +393,30 @@ def test_drag_reaches_the_service(
     assert first.x == pytest.approx(1.0)
     assert first.y == pytest.approx(1.0)
     assert second.position == "custom"
+
+
+def test_window_shows_app_icon(gui: WatermarkApp) -> None:
+    assert gui.window_icon is not None
+    assert gui.window_icon.width() == 256
+
+
+def test_missing_icon_asset_fails_silently(
+    app_root: tk.Tk, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "image_watermark_app.presentation.app.asset_path",
+        lambda name: Path("/nonexistent") / name,
+    )
+    view = WatermarkApp(app_root)
+    assert view.window_icon is None
+
+
+def test_icon_load_error_fails_silently(
+    app_root: tk.Tk, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken_photoimage(*args: object, **kwargs: object) -> tk.PhotoImage:
+        raise tk.TclError("cannot build image")
+
+    monkeypatch.setattr(tk, "PhotoImage", broken_photoimage)
+    view = WatermarkApp(app_root)
+    assert view.window_icon is None
