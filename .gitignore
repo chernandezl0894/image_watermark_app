@@ -22,9 +22,6 @@ dist/
 .coverage
 htmlcov/
 
-# uv
-uv.lock
-
 # Editors
 .idea/
 *.swp

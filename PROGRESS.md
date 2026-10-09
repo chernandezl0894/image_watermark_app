@@ -6,14 +6,14 @@
 
 ## Phase 1 — Project setup + tooling
 
-- [ ] 1.1 `git init`, `.gitignore`, initial commit with `REQUIREMENTS.md`
-- [ ] 1.2 `uv init --package`; `uv add pillow`; `uv add --dev pytest ruff mypy pre-commit`
-- [ ] 1.3 Configure `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` in `pyproject.toml`
-- [ ] 1.4 Create `.pre-commit-config.yaml` and install hooks
-- [ ] 1.5 Create `.editorconfig`, `.zed/settings.json`, `.vscode/settings.json`
-- [ ] 1.6 Create `src/` skeleton and `tests/test_smoke.py`
-- [ ] 1.7 Run all quality checks (ruff, mypy, pytest, pre-commit)
-- [ ] 1.8 Commit: `chore: initialize project with uv, ruff, mypy, pytest and pre-commit`
+- [x] 1.1 `git init`, `.gitignore`, initial commit with `REQUIREMENTS.md`
+- [x] 1.2 `uv init --package`; `uv add pillow`; `uv add --dev pytest ruff mypy pre-commit`
+- [x] 1.3 Configure `[tool.ruff]`, `[tool.mypy]`, `[tool.pytest.ini_options]` in `pyproject.toml`
+- [x] 1.4 Create `.pre-commit-config.yaml` and install hooks
+- [x] 1.5 Create `.editorconfig`, `.zed/settings.json`, `.vscode/settings.json`
+- [x] 1.6 Create `src/` skeleton and `tests/test_smoke.py`
+- [x] 1.7 Run all quality checks (ruff, mypy, pytest, pre-commit)
+- [x] 1.8 Commit: `chore: initialize project with uv, ruff, mypy, pytest and pre-commit`
 
 ## Phase 2 — Watermark core + tests
 
@@ -55,7 +55,7 @@
 
 | Phase | State  | Commit |
 | ----- | ------ | ------ |
-| 1     | in progress | —      |
+| 1     | done   | (this commit) |
 | 2     | pending | —      |
 | 3     | pending | —      |
 | 4     | pending | —      |
