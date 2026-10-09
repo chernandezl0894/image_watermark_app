@@ -340,7 +340,10 @@ def test_view_uses_injected_service(
     view.apply_watermark()
     view.save_image()
 
-    assert [request.text for request in service.applied] == ["image_watermark_app", "image_watermark_app"]
+    assert [request.text for request in service.applied] == [
+        "image_watermark_app",
+        "image_watermark_app",
+    ]
     assert service.saved == [destination]
     assert destination.read_bytes() == b"fake"
     assert len(infos) == 1

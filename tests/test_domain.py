@@ -108,11 +108,15 @@ def test_request_rejects_custom_position_without_coordinates() -> None:
 @pytest.mark.parametrize("coordinate", [-0.1, 1.1])
 def test_request_rejects_custom_position_out_of_range(coordinate: float) -> None:
     with pytest.raises(ValueError, match="Custom position requires"):
-        WatermarkRequest(text="image_watermark_app", position="custom", x=coordinate, y=0.5)
+        WatermarkRequest(
+            text="image_watermark_app", position="custom", x=coordinate, y=0.5
+        )
 
 
 def test_request_accepts_custom_position_with_coordinates() -> None:
-    request = WatermarkRequest(text="image_watermark_app", position="custom", x=0.25, y=0.75)
+    request = WatermarkRequest(
+        text="image_watermark_app", position="custom", x=0.25, y=0.75
+    )
     assert request.position == "custom"
     assert request.x == 0.25
     assert request.y == 0.75

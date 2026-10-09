@@ -8,7 +8,9 @@ def test_valid_input_has_no_errors() -> None:
 
 
 def test_missing_image_is_reported() -> None:
-    assert validate_request("image_watermark_app", has_image=False) == ["Load an image first."]
+    assert validate_request("image_watermark_app", has_image=False) == [
+        "Load an image first."
+    ]
 
 
 def test_empty_text_is_reported() -> None:
