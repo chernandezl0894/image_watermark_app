@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-DEFAULT_TEXT: Final = "Crissis"
+DEFAULT_TEXT: Final = "image_watermark_app"
 DEFAULT_OPACITY: Final = 0.5
 DEFAULT_POSITION: Final = "bottom-right"
 DEFAULT_COLOR: Final = "#FFFFFF"

@@ -23,7 +23,7 @@ def gui(app_root: tk.Tk) -> WatermarkApp:
 
 def test_window_opens_with_defaults(gui: WatermarkApp) -> None:
     assert gui.root.title() == "Image Watermark App"
-    assert gui.text_var.get() == "Crissis"
+    assert gui.text_var.get() == "image_watermark_app"
     assert gui.status_var.get() == "No image loaded"
     assert gui.source is None
     assert gui.opacity_var.get() == pytest.approx(0.5)
@@ -106,7 +106,7 @@ def test_apply_reports_every_problem_at_once(
 
 def test_apply_refreshes_preview(gui: WatermarkApp, tmp_path: Path) -> None:
     gui.load_from_path(make_test_image(tmp_path / "photo.png"))
-    gui.text_var.set("Crissis")
+    gui.text_var.set("image_watermark_app")
     gui.apply_watermark()
     assert gui._preview_photo is not None
     assert "Watermark applied" in gui.status_var.get()
@@ -340,7 +340,7 @@ def test_view_uses_injected_service(
     view.apply_watermark()
     view.save_image()
 
-    assert [request.text for request in service.applied] == ["Crissis", "Crissis"]
+    assert [request.text for request in service.applied] == ["image_watermark_app", "image_watermark_app"]
     assert service.saved == [destination]
     assert destination.read_bytes() == b"fake"
     assert len(infos) == 1

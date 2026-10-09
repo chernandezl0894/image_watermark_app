@@ -37,7 +37,7 @@ def make_image(size: tuple[int, int] = (300, 200)) -> Image.Image:
 
 def test_request_defaults() -> None:
     request = WatermarkRequest(text=DEFAULT_TEXT)
-    assert request.text == "Crissis"
+    assert request.text == "image_watermark_app"
     assert request.opacity == DEFAULT_OPACITY
     assert request.position == DEFAULT_POSITION
     assert request.margin_ratio == 0.03
@@ -55,34 +55,34 @@ def test_request_rejects_empty_text(text: str) -> None:
 @pytest.mark.parametrize("opacity", [-0.1, 1.5])
 def test_request_rejects_out_of_range_opacity(opacity: float) -> None:
     with pytest.raises(ValueError, match="Opacity must be"):
-        WatermarkRequest(text="Crissis", opacity=opacity)
+        WatermarkRequest(text="image_watermark_app", opacity=opacity)
 
 
 def test_request_rejects_unknown_position() -> None:
     with pytest.raises(ValueError, match="Unknown position"):
-        WatermarkRequest(text="Crissis", position="middle")
+        WatermarkRequest(text="image_watermark_app", position="middle")
 
 
 @pytest.mark.parametrize("margin", [-0.01, 0.9])
 def test_request_rejects_out_of_range_margin(margin: float) -> None:
     with pytest.raises(ValueError, match="Margin ratio must be"):
-        WatermarkRequest(text="Crissis", margin_ratio=margin)
+        WatermarkRequest(text="image_watermark_app", margin_ratio=margin)
 
 
 @pytest.mark.parametrize("color", ["red", "#FFF", "#GGGGGG", "ffffff", "#1234567", ""])
 def test_request_rejects_invalid_color(color: str) -> None:
     with pytest.raises(ValueError, match="Color must be"):
-        WatermarkRequest(text="Crissis", color=color)
+        WatermarkRequest(text="image_watermark_app", color=color)
 
 
 @pytest.mark.parametrize("font_size", [0, -5])
 def test_request_rejects_non_positive_font_size(font_size: int) -> None:
     with pytest.raises(ValueError, match="Font size must be"):
-        WatermarkRequest(text="Crissis", font_size=font_size)
+        WatermarkRequest(text="image_watermark_app", font_size=font_size)
 
 
 def test_request_accepts_minimal_font_size() -> None:
-    assert WatermarkRequest(text="Crissis", font_size=1).font_size == 1
+    assert WatermarkRequest(text="image_watermark_app", font_size=1).font_size == 1
 
 
 def test_request_placement_defaults() -> None:
@@ -97,22 +97,22 @@ def test_request_placement_defaults() -> None:
 @pytest.mark.parametrize("rotation", [-180.1, 180.1])
 def test_request_rejects_out_of_range_rotation(rotation: float) -> None:
     with pytest.raises(ValueError, match="Rotation must be"):
-        WatermarkRequest(text="Crissis", rotation=rotation)
+        WatermarkRequest(text="image_watermark_app", rotation=rotation)
 
 
 def test_request_rejects_custom_position_without_coordinates() -> None:
     with pytest.raises(ValueError, match="Custom position requires"):
-        WatermarkRequest(text="Crissis", position="custom")
+        WatermarkRequest(text="image_watermark_app", position="custom")
 
 
 @pytest.mark.parametrize("coordinate", [-0.1, 1.1])
 def test_request_rejects_custom_position_out_of_range(coordinate: float) -> None:
     with pytest.raises(ValueError, match="Custom position requires"):
-        WatermarkRequest(text="Crissis", position="custom", x=coordinate, y=0.5)
+        WatermarkRequest(text="image_watermark_app", position="custom", x=coordinate, y=0.5)
 
 
 def test_request_accepts_custom_position_with_coordinates() -> None:
-    request = WatermarkRequest(text="Crissis", position="custom", x=0.25, y=0.75)
+    request = WatermarkRequest(text="image_watermark_app", position="custom", x=0.25, y=0.75)
     assert request.position == "custom"
     assert request.x == 0.25
     assert request.y == 0.75
@@ -121,7 +121,7 @@ def test_request_accepts_custom_position_with_coordinates() -> None:
 @pytest.mark.parametrize("gap", [0.0, -0.1, 2.1])
 def test_request_rejects_invalid_tile_gap(gap: float) -> None:
     with pytest.raises(ValueError, match="Tile gap must be"):
-        WatermarkRequest(text="Crissis", tiled=True, tile_gap=gap)
+        WatermarkRequest(text="image_watermark_app", tiled=True, tile_gap=gap)
 
 
 def test_invalid_image_error_is_a_value_error() -> None:

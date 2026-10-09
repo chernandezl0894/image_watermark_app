@@ -20,7 +20,7 @@ A desktop application to add a text watermark to images, built with Python, Tkin
 Load an image from your computer, stamp a text watermark on it, preview the result and save it — all from a simple desktop window.
 
 - Load images in PNG, JPEG, BMP, GIF, WebP and TIFF
-- Watermark text is editable (default: `Crissis`)
+- Watermark text is editable (default: `image_watermark_app`)
 - Watermark controls: opacity slider, position picker (five positions), text colour,
   font size (auto by default) and custom TTF/OTF font selection
 - Visual placement: drag the watermark over the preview, tilt it (−180° to 180°)
@@ -31,17 +31,17 @@ Load an image from your computer, stamp a text watermark on it, preview the resu
 
 ## Built with
 
-| Technology | Role |
-| --- | --- |
-| [Python](https://www.python.org/) 3.14 | Programming language |
-| Tkinter | Desktop GUI (standard library) |
-| [Pillow](https://python-pillow.org/) | Image loading, watermarking and saving |
-| [uv](https://docs.astral.sh/uv/) | Package and environment management |
-| [Ruff](https://docs.astral.sh/ruff/) | Linter and formatter |
-| [mypy](https://mypy.readthedocs.io/) | Static type checking (strict mode) |
-| [pytest](https://docs.pytest.org/) | Test runner |
-| [pre-commit](https://pre-commit.com/) | Git hooks for automatic checks |
-| [PyInstaller](https://pyinstaller.org/) | Standalone executable packaging |
+| Technology                              | Role                                   |
+| --------------------------------------- | -------------------------------------- |
+| [Python](https://www.python.org/) 3.14  | Programming language                   |
+| Tkinter                                 | Desktop GUI (standard library)         |
+| [Pillow](https://python-pillow.org/)    | Image loading, watermarking and saving |
+| [uv](https://docs.astral.sh/uv/)        | Package and environment management     |
+| [Ruff](https://docs.astral.sh/ruff/)    | Linter and formatter                   |
+| [mypy](https://mypy.readthedocs.io/)    | Static type checking (strict mode)     |
+| [pytest](https://docs.pytest.org/)      | Test runner                            |
+| [pre-commit](https://pre-commit.com/)   | Git hooks for automatic checks         |
+| [PyInstaller](https://pyinstaller.org/) | Standalone executable packaging        |
 
 ## Getting started
 
@@ -70,7 +70,7 @@ uv run image-watermark-app
 ### Step by step
 
 1. **Load Image...** — pick a picture from your computer; it appears in the preview.
-2. **Watermark** — type the text you want to stamp (defaults to `Crissis`).
+2. **Watermark** — type the text you want to stamp (defaults to `image_watermark_app`).
 3. **Watermark options** — tune the controls: opacity slider, position picker,
    text colour (**Choose...**), font size (blank = auto-scaled), custom font
    (**Browse...** for a TTF/OTF file, **Clear** to restore the default font),
@@ -99,7 +99,7 @@ service.watermark_file(
     Path("input.png"),
     Path("output.png"),
     WatermarkRequest(
-        text="Crissis",
+        text="image_watermark_app",
         opacity=0.5,
         position="bottom-right",
         color="#FFFFFF",
@@ -115,7 +115,7 @@ to it instead of failing). Placement is equally programmatic:
 
 ```python
 WatermarkRequest(
-    text="Crissis",
+    text="image_watermark_app",
     position="custom",  # free placement
     x=0.25,
     y=0.75,  # fractions of width/height (centre of the text)
@@ -145,22 +145,22 @@ inwards, so the domain rules never depend on the GUI, the file system or Pillow'
               └──────────────┘   └──────────────────────┘
 ```
 
-| Layer | Responsibility | Modules |
-| --- | --- | --- |
-| `domain` | Entities and pure watermarking rules, no I/O or UI | `models.py` (`WatermarkRequest`), `watermark.py` (`stamp_image`) |
-| `application` | Use cases and the interfaces they need | `ports.py`, `services.py`, `validation.py` |
-| `infrastructure` | Concrete adapters (Pillow persistence) | `pillow_repository.py` |
-| `presentation` | Tkinter window, event handlers, preview formatting | `app.py`, `preview.py` |
+| Layer            | Responsibility                                     | Modules                                                          |
+| ---------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
+| `domain`         | Entities and pure watermarking rules, no I/O or UI | `models.py` (`WatermarkRequest`), `watermark.py` (`stamp_image`) |
+| `application`    | Use cases and the interfaces they need             | `ports.py`, `services.py`, `validation.py`                       |
+| `infrastructure` | Concrete adapters (Pillow persistence)             | `pillow_repository.py`                                           |
+| `presentation`   | Tkinter window, event handlers, preview formatting | `app.py`, `preview.py`                                           |
 
 ### SOLID in this project
 
-| Principle | How it is applied |
-| --- | --- |
+| Principle                 | How it is applied                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | **S**ingle responsibility | Each module has one reason to change: entities, stamping, validation, persistence, orchestration and the view are all separate. |
-| **O**pen/closed | New storage backends or formats are added by implementing `ImageRepository` without touching the view or the domain. |
-| **L**iskov substitution | `PillowImageRepository` honours the `ImageRepository` contract, so it can be swapped freely. |
-| **I**nterface segregation | The view depends on `WatermarkUseCases` (load/apply/save only), not on the full service API. |
-| **D**ependency inversion | The view receives `WatermarkUseCases` by constructor injection; a fake implementation is used in tests. |
+| **O**pen/closed           | New storage backends or formats are added by implementing `ImageRepository` without touching the view or the domain.            |
+| **L**iskov substitution   | `PillowImageRepository` honours the `ImageRepository` contract, so it can be swapped freely.                                    |
+| **I**nterface segregation | The view depends on `WatermarkUseCases` (load/apply/save only), not on the full service API.                                    |
+| **D**ependency inversion  | The view receives `WatermarkUseCases` by constructor injection; a fake implementation is used in tests.                         |
 
 ## Project structure
 
@@ -199,19 +199,19 @@ image_watermark_app/
 
 ### Commands
 
-| Command | Description |
-| --- | --- |
-| `uv sync` | Install/update all dependencies |
-| `uv run image-watermark-app` | Launch the desktop app |
-| `uv run pytest` | Run the test suite |
-| `uv run ruff check .` | Lint |
-| `uv run ruff check --fix .` | Lint and apply automatic fixes |
-| `uv run ruff format .` | Format the code |
-| `uv run mypy` | Type check (strict) |
-| `uv run pre-commit run --all-files` | Run every git hook on the whole repo |
-| `uv run pyinstaller image_watermark_app.spec` | Build the standalone executable |
-| `uv add <package>` | Add a runtime dependency |
-| `uv add --dev <package>` | Add a development dependency |
+| Command                                       | Description                          |
+| --------------------------------------------- | ------------------------------------ |
+| `uv sync`                                     | Install/update all dependencies      |
+| `uv run image-watermark-app`                  | Launch the desktop app               |
+| `uv run pytest`                               | Run the test suite                   |
+| `uv run ruff check .`                         | Lint                                 |
+| `uv run ruff check --fix .`                   | Lint and apply automatic fixes       |
+| `uv run ruff format .`                        | Format the code                      |
+| `uv run mypy`                                 | Type check (strict)                  |
+| `uv run pre-commit run --all-files`           | Run every git hook on the whole repo |
+| `uv run pyinstaller image_watermark_app.spec` | Build the standalone executable      |
+| `uv add <package>`                            | Add a runtime dependency             |
+| `uv add --dev <package>`                      | Add a development dependency         |
 
 ### Code quality workflow
 

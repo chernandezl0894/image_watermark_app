@@ -28,7 +28,7 @@
 
 - [x] 3.1 Implement `app.py`: main window with image preview
 - [x] 3.2 "Load Image" button (`filedialog`)
-- [x] 3.3 Watermark text field (default `"Crissis"`)
+- [x] 3.3 Watermark text field (default `"image_watermark_app"`)
 - [x] 3.4 "Apply Watermark" button (updates preview) and "Save As..." button (`asksaveasfilename`)
 - [x] 3.5 Error dialogs with `messagebox`
 - [x] 3.6 Tests: window smoke test + GUI helper tests
@@ -95,14 +95,14 @@
 
 ## Status
 
-| Phase | State  | Commit |
-| ----- | ------ | ------ |
-| 1     | done   | 339159f |
-| 2     | done   | 8f58be2 |
-| 3     | done   | 022b31a |
-| 4     | done   | 04bc1e9 |
-| 5     | done   | f02d3c4 |
-| 6     | done   | 50b0a17 |
-| 7     | done   | 0825f7c |
-| 8     | done   | c396a91 |
-| 9     | done   | (this commit) |
+| Phase | State | Commit  |
+| ----- | ----- | ------- |
+| 1     | done  | 339159f |
+| 2     | done  | 8f58be2 |
+| 3     | done  | 022b31a |
+| 4     | done  | 04bc1e9 |
+| 5     | done  | f02d3c4 |
+| 6     | done  | 50b0a17 |
+| 7     | done  | 0825f7c |
+| 8     | done  | c396a91 |
+| 9     | done  | 1fbfae5 |
