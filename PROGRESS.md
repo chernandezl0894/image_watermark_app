@@ -17,12 +17,12 @@
 
 ## Phase 2 — Watermark core + tests
 
-- [ ] 2.1 Implement `watermark.py` with `add_watermark(input, output, text, opacity, position)`
-- [ ] 2.2 Semi-transparent text (~50% alpha), bottom-right corner with margin
-- [ ] 2.3 Error handling: missing file, invalid image, empty text
-- [ ] 2.4 Tests: output exists, dimensions preserved, pixels changed, errors raised
-- [ ] 2.5 Run quality checks
-- [ ] 2.6 Commit: `feat: add watermark core logic with Pillow`
+- [x] 2.1 Implement `watermark.py` with `add_watermark(input, output, text, opacity, position)`
+- [x] 2.2 Semi-transparent text (~50% alpha), bottom-right corner with margin
+- [x] 2.3 Error handling: missing file, invalid image, empty text
+- [x] 2.4 Tests: output exists, dimensions preserved, pixels changed, errors raised
+- [x] 2.5 Run quality checks
+- [x] 2.6 Commit: `feat: add watermark core logic with Pillow`
 
 ## Phase 3 — Tkinter GUI + tests
 
@@ -55,8 +55,8 @@
 
 | Phase | State  | Commit |
 | ----- | ------ | ------ |
-| 1     | done   | (this commit) |
-| 2     | pending | —      |
+| 1     | done   | 339159f |
+| 2     | done   | (this commit) |
 | 3     | pending | —      |
 | 4     | pending | —      |
 | 5     | pending | —      |
