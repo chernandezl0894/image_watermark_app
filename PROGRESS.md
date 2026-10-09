@@ -35,13 +35,17 @@
 - [x] 3.7 Run quality checks
 - [x] 3.8 Commit: `feat: add Tkinter GUI with load, preview and save`
 
-## Phase 4 — Integration, polish, validations + tests
+## Phase 4 — Clean architecture, validations, polish + tests
 
-- [ ] 4.1 GUI validations (no image loaded, empty text)
-- [ ] 4.2 UX polish (minimum window size, title, resizable)
-- [ ] 4.3 Tests for validations
-- [ ] 4.4 Run quality checks + manual test
-- [ ] 4.5 Commit: `test: add validations and polish UX`
+- [x] 4.1 Domain layer (`domain/`): `WatermarkRequest` entity with invariants, pure `stamp_image`
+- [x] 4.2 Application layer (`application/`): `ImageRepository` and `WatermarkUseCases` ports, `WatermarkService`, `validate_request`
+- [x] 4.3 Infrastructure layer (`infrastructure/`): `PillowImageRepository` (load/save, colour-model policy)
+- [x] 4.4 Presentation layer (`presentation/`): view depends only on the `WatermarkUseCases` protocol (constructor injection), pure preview helpers
+- [x] 4.5 GUI validations (no image loaded, empty text, all problems reported at once)
+- [x] 4.6 UX polish (Enter applies the watermark, status bar feedback)
+- [x] 4.7 Tests per layer: domain, repository, service, validation, preview, view (incl. fake-service DIP test)
+- [x] 4.8 Run quality checks + manual launch test
+- [x] 4.9 Commit: `refactor: adopt clean architecture layers and GUI validation`
 
 ## Phase 5 — Documentation
 
@@ -57,6 +61,6 @@
 | ----- | ------ | ------ |
 | 1     | done   | 339159f |
 | 2     | done   | 8f58be2 |
-| 3     | done   | (this commit) |
-| 4     | pending | —      |
+| 3     | done   | 022b31a |
+| 4     | done   | (this commit) |
 | 5     | pending | —      |

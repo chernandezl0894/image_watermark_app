@@ -5,11 +5,8 @@ from tkinter import filedialog, messagebox
 import pytest
 from PIL import Image
 
-from image_watermark_app.app import (
-    WatermarkApp,
-    fit_within,
-    flatten_for_preview,
-)
+from image_watermark_app.domain import WatermarkRequest
+from image_watermark_app.presentation.app import WatermarkApp
 
 
 def make_test_image(path: Path) -> Path:
@@ -86,6 +83,18 @@ def test_apply_with_empty_text_warns(
     gui.text_var.set("   ")
     gui.apply_watermark()
     assert warnings == ["Enter a watermark text."]
+
+
+def test_apply_reports_every_problem_at_once(
+    gui: WatermarkApp, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        messagebox, "showwarning", lambda title, message: warnings.append(message)
+    )
+    gui.text_var.set("")
+    gui.apply_watermark()
+    assert warnings == ["Load an image first.\nEnter a watermark text."]
 
 
 def test_apply_refreshes_preview(gui: WatermarkApp, tmp_path: Path) -> None:
@@ -165,25 +174,51 @@ def test_save_cancel_writes_nothing(
     assert list(tmp_path.glob("*_watermarked.*")) == []
 
 
-def test_fit_within_scales_down() -> None:
-    image = Image.new("RGB", (1000, 800))
-    fitted = fit_within(image, (640, 420))
-    assert fitted.size == (525, 420)
-    assert fitted.width <= 640 and fitted.height <= 420
+class RecordingService:
+    """Fake WatermarkUseCases proving the view depends only on the protocol."""
+
+    def __init__(self) -> None:
+        self.applied: list[WatermarkRequest] = []
+        self.saved: list[Path] = []
+
+    def load(self, path: Path) -> Image.Image:
+        return Image.new("RGB", (40, 20), (1, 2, 3))
+
+    def apply(self, source: Image.Image, request: WatermarkRequest) -> Image.Image:
+        self.applied.append(request)
+        return source.convert("RGBA")
+
+    def save(
+        self,
+        source: Image.Image,
+        request: WatermarkRequest,
+        output_path: Path,
+    ) -> Path:
+        self.applied.append(request)
+        self.saved.append(output_path)
+        output_path.write_bytes(b"fake")
+        return output_path
 
 
-def test_fit_within_keeps_small_images() -> None:
-    image = Image.new("RGB", (100, 50))
-    assert fit_within(image, (640, 420)).size == (100, 50)
+def test_view_uses_injected_service(
+    app_root: tk.Tk, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service = RecordingService()
+    view = WatermarkApp(app_root, service=service)
+    infos: list[str] = []
+    monkeypatch.setattr(
+        messagebox, "showinfo", lambda title, message: infos.append(message)
+    )
+    destination = tmp_path / "out.png"
+    monkeypatch.setattr(
+        filedialog, "asksaveasfilename", lambda **kwargs: str(destination)
+    )
 
+    view.load_from_path(tmp_path / "ignored-by-fake.png")
+    view.apply_watermark()
+    view.save_image()
 
-def test_flatten_keeps_rgb() -> None:
-    image = Image.new("RGB", (10, 10), (1, 2, 3))
-    assert flatten_for_preview(image).mode == "RGB"
-
-
-def test_flatten_composites_alpha_over_white() -> None:
-    image = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
-    flattened = flatten_for_preview(image)
-    assert flattened.mode == "RGB"
-    assert flattened.getpixel((5, 5)) == (255, 255, 255)
+    assert [request.text for request in service.applied] == ["Crissis", "Crissis"]
+    assert service.saved == [destination]
+    assert destination.read_bytes() == b"fake"
+    assert len(infos) == 1

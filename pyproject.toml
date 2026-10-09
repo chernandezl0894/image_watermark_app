@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-image-watermark-app = "image_watermark_app.app:main"
+image-watermark-app = "image_watermark_app.presentation.app:main"
 
 [build-system]
 requires = ["uv_build>=0.11.14,<0.12.0"]
