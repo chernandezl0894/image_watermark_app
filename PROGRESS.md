@@ -85,6 +85,12 @@
 - [x] 8.7 Update `README.md` (packaging section, commands, structure) and drop the item from future improvements
 - [x] 8.8 Run quality checks (pytest, ruff, mypy, pre-commit)
 
+## Phase 9 — CI: Windows executable
+
+- [x] 9.1 GitHub Actions workflow `.github/workflows/build-windows.yml` (uv with cache, frozen lockfile, tests, PyInstaller build)
+- [x] 9.2 Upload the `.exe` as a run artifact; publish it to the GitHub Release on `v*` tags
+- [x] 9.3 Validate the workflow (YAML + actionlint) and update `README.md` / `PROGRESS.md`
+
 ---
 
 ## Status
@@ -98,4 +104,5 @@
 | 5     | done   | f02d3c4 |
 | 6     | done   | 50b0a17 |
 | 7     | done   | 0825f7c |
-| 8     | done   | (this commit) |
+| 8     | done   | c396a91 |
+| 9     | done   | (this commit) |

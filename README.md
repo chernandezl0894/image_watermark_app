@@ -246,6 +246,10 @@ The single-file binary lands in `dist/` (`ImageWatermarkApp`, or
   the icon belongs to the file you assign it to in the desktop).
 - The assets used for the window icon are bundled inside the executable.
 - Builds are platform-specific: run the same spec on each OS you want to target.
+- Windows binaries are built by GitHub Actions: the `build-windows` workflow
+  (`.github/workflows/build-windows.yml`) runs the tests, builds the `.exe`,
+  uploads it as a run artifact and attaches it to the GitHub Release when a
+  `v*` tag is pushed (named `ImageWatermarkApp-<tag>-windows-x86_64.exe`).
 - The window and file icons come from `src/image_watermark_app/assets/`
   (`icon.png` + `icon.ico`); regenerate both deterministically with
   `uv run python scripts/generate_icon.py`.
@@ -259,7 +263,7 @@ The single-file binary lands in `dist/` (`ImageWatermarkApp`, or
 - **CLI interface** for scripting (building on `WatermarkService`)
 - **Persistent settings**: remember the last folder, opacity and position
 - **Localization**: Spanish/English UI strings
-- **CI pipeline**: GitHub Actions running lint, type check and tests with coverage
+- **CI pipeline**: extend to macOS/Linux builds plus a lint, type-check and coverage job
 - **License**: add a `LICENSE` file to define reuse terms
 
 ## License
