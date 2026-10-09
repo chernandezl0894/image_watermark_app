@@ -1,0 +1,210 @@
+# Image Watermark App
+
+A desktop application to add a text watermark to images, built with Python, Tkinter and Pillow.
+
+## Contents
+
+- [Overview](#overview)
+- [Built with](#built-with)
+- [Getting started](#getting-started)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Development](#development)
+- [Testing](#testing)
+- [Future improvements](#future-improvements)
+
+## Overview
+
+Load an image from your computer, stamp a text watermark on it, preview the result and save it — all from a simple desktop window.
+
+- Load images in PNG, JPEG, BMP, GIF, WebP and TIFF
+- Watermark text is editable (default: `Crissis`)
+- Semi-transparent white text placed at the bottom-right corner (five positions available)
+- Live preview before exporting
+- Save the result as PNG, JPEG, BMP, GIF, WebP or TIFF
+- Friendly validation messages (no image loaded, empty text, invalid file, ...)
+
+## Built with
+
+| Technology | Role |
+| --- | --- |
+| [Python](https://www.python.org/) 3.14 | Programming language |
+| Tkinter | Desktop GUI (standard library) |
+| [Pillow](https://python-pillow.org/) | Image loading, watermarking and saving |
+| [uv](https://docs.astral.sh/uv/) | Package and environment management |
+| [Ruff](https://docs.astral.sh/ruff/) | Linter and formatter |
+| [mypy](https://mypy.readthedocs.io/) | Static type checking (strict mode) |
+| [pytest](https://docs.pytest.org/) | Test runner |
+| [pre-commit](https://pre-commit.com/) | Git hooks for automatic checks |
+
+## Getting started
+
+### Requirements
+
+- [uv](https://docs.astral.sh/uv/) (it installs the correct Python version automatically)
+
+### Installation
+
+```bash
+git clone <repository-url>
+cd image_watermark_app
+uv sync
+```
+
+This creates a virtual environment in `.venv` and installs the runtime and development dependencies.
+
+## Usage
+
+### Run the application
+
+```bash
+uv run image-watermark-app
+```
+
+### Step by step
+
+1. **Load Image...** — pick a picture from your computer; it appears in the preview.
+2. **Watermark** — type the text you want to stamp (defaults to `Crissis`).
+3. **Apply Watermark** (or press **Enter** in the text field) — the preview updates with the
+   semi-transparent text in the bottom-right corner.
+4. **Save As...** — choose the destination; the suggested name is
+   `original_watermarked.ext`.
+
+### Programmatic usage
+
+The watermarking logic can also be used without the GUI:
+
+```python
+from pathlib import Path
+
+from image_watermark_app.application import WatermarkService
+from image_watermark_app.domain import WatermarkRequest
+from image_watermark_app.infrastructure import PillowImageRepository
+
+service = WatermarkService(PillowImageRepository())
+service.watermark_file(
+    Path("input.png"),
+    Path("output.png"),
+    WatermarkRequest(text="Crissis", opacity=0.5, position="bottom-right"),
+)
+```
+
+## Architecture
+
+The project follows **clean architecture**: the code is split into layers that depend only
+inwards, so the domain rules never depend on the GUI, the file system or Pillow's I/O.
+
+```
+                 ┌───────────────────────────┐
+                 │      presentation/        │   Tkinter view + preview helpers
+                 └─────────────┬─────────────┘
+                               │  depends on the WatermarkUseCases protocol
+                 ┌─────────────▼─────────────┐
+                 │      application/         │   use cases, ports, validation
+                 └───────┬─────────────┬─────┘
+                         │             │  implements the ImageRepository port
+              ┌──────────▼───┐   ┌─────▼────────────────┐
+              │    domain/   │   │   infrastructure/    │
+              │ pure rules   │   │   Pillow adapter     │
+              └──────────────┘   └──────────────────────┘
+```
+
+| Layer | Responsibility | Modules |
+| --- | --- | --- |
+| `domain` | Entities and pure watermarking rules, no I/O or UI | `models.py` (`WatermarkRequest`), `watermark.py` (`stamp_image`) |
+| `application` | Use cases and the interfaces they need | `ports.py`, `services.py`, `validation.py` |
+| `infrastructure` | Concrete adapters (Pillow persistence) | `pillow_repository.py` |
+| `presentation` | Tkinter window, event handlers, preview formatting | `app.py`, `preview.py` |
+
+### SOLID in this project
+
+| Principle | How it is applied |
+| --- | --- |
+| **S**ingle responsibility | Each module has one reason to change: entities, stamping, validation, persistence, orchestration and the view are all separate. |
+| **O**pen/closed | New storage backends or formats are added by implementing `ImageRepository` without touching the view or the domain. |
+| **L**iskov substitution | `PillowImageRepository` honours the `ImageRepository` contract, so it can be swapped freely. |
+| **I**nterface segregation | The view depends on `WatermarkUseCases` (load/apply/save only), not on the full service API. |
+| **D**ependency inversion | The view receives `WatermarkUseCases` by constructor injection; a fake implementation is used in tests. |
+
+## Project structure
+
+```
+image_watermark_app/
+├── README.md
+├── REQUIREMENTS.md          # Original requirements
+├── PROGRESS.md              # Phase-by-phase development log
+├── pyproject.toml           # Project metadata + ruff/mypy/pytest config
+├── .pre-commit-config.yaml  # ruff, ruff-format and mypy hooks
+├── .editorconfig
+├── .zed/settings.json       # Zed editor settings
+├── .vscode/settings.json    # VS Code settings
+├── src/image_watermark_app/
+│   ├── domain/
+│   │   ├── models.py        # WatermarkRequest entity + errors
+│   │   └── watermark.py     # Pure stamping logic
+│   ├── application/
+│   │   ├── ports.py         # ImageRepository / WatermarkUseCases protocols
+│   │   ├── services.py      # WatermarkService use cases
+│   │   └── validation.py    # User-facing input validation
+│   ├── infrastructure/
+│   │   └── pillow_repository.py
+│   └── presentation/
+│       ├── app.py           # Tkinter view (entry point)
+│       └── preview.py       # Preview scaling/formatting helpers
+└── tests/                   # One test module per layer
+```
+
+## Development
+
+### Commands
+
+| Command | Description |
+| --- | --- |
+| `uv sync` | Install/update all dependencies |
+| `uv run image-watermark-app` | Launch the desktop app |
+| `uv run pytest` | Run the test suite |
+| `uv run ruff check .` | Lint |
+| `uv run ruff check --fix .` | Lint and apply automatic fixes |
+| `uv run ruff format .` | Format the code |
+| `uv run mypy` | Type check (strict) |
+| `uv run pre-commit run --all-files` | Run every git hook on the whole repo |
+| `uv add <package>` | Add a runtime dependency |
+| `uv add --dev <package>` | Add a development dependency |
+
+### Code quality workflow
+
+Git hooks are installed with `uv run pre-commit install` (done during setup) and run
+**ruff**, **ruff-format** and **mypy** automatically on every commit. A commit only goes
+through when all checks pass.
+
+## Testing
+
+```bash
+uv run pytest
+```
+
+The suite mirrors the architecture: domain, repository, service, validation, preview and
+GUI tests. GUI tests create a real Tk window and are skipped automatically when no display
+is available.
+
+## Future improvements
+
+- **Watermark controls**: opacity slider, position picker, text colour, font size and
+  custom font (TTF) selection
+- **Visual placement**: drag the watermark over the preview, tilt/rotation and tiled
+  (repeated) watermarks
+- **Logo watermark**: stamp an image/logo in addition to text
+- **Batch mode**: process a whole folder of images at once
+- **Drag & drop** images onto the window and a "recent files" list
+- **Side-by-side preview** (original vs. watermarked) before saving
+- **CLI interface** for scripting (building on `WatermarkService`)
+- **Persistent settings**: remember the last folder, opacity and position
+- **Localization**: Spanish/English UI strings
+- **Packaging**: standalone executables (PyInstaller/Briefcase) and an app icon
+- **CI pipeline**: GitHub Actions running lint, type check and tests with coverage
+- **License**: add a `LICENSE` file to define reuse terms
+
+## License
+
+No license has been chosen yet.

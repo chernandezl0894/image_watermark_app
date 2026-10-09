@@ -49,9 +49,9 @@
 
 ## Phase 5 — Documentation
 
-- [ ] 5.1 Create `README.md` (install, usage, quality commands)
-- [ ] 5.2 Add final improvements list to `PROGRESS.md`
-- [ ] 5.3 Commit: `docs: add README and future improvements list`
+- [x] 5.1 Create `README.md`: overview, technologies, installation, usage, architecture (clean architecture + SOLID), project structure, development commands, testing
+- [x] 5.2 Add future improvements list to `README.md`
+- [x] 5.3 Commit: `docs: add README with architecture and future improvements`
 
 ---
 
@@ -62,5 +62,5 @@
 | 1     | done   | 339159f |
 | 2     | done   | 8f58be2 |
 | 3     | done   | 022b31a |
-| 4     | done   | (this commit) |
-| 5     | pending | —      |
+| 4     | done   | 04bc1e9 |
+| 5     | done   | (this commit) |
